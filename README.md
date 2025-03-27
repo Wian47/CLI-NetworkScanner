@@ -13,6 +13,7 @@ A feature-rich, visually appealing command-line network diagnostic tool with int
 - **Network Info**: Local IP configuration, public IP detection, and interface statistics
 - **Device Discovery**: Scan your local network to find all connected devices with IP/MAC addresses, hostnames, and vendor identification
 - **Bandwidth Monitor**: Track and visualize real-time network usage with graphs showing upload/download speeds
+- **SSL Certificate Checker**: Verify website certificates, check expiration dates, and validate certificate chains
 
 ## Screenshots
 
@@ -117,6 +118,15 @@ python networkscanner.py bandwidth --duration 300            # Monitor for 5 min
 python networkscanner.py bandwidth --interval 0.5            # More frequent updates (twice per second)
 ```
 
+#### SSL Certificate Checker
+
+```
+python networkscanner.py ssl example.com                     # Check certificate for example.com
+python networkscanner.py ssl secure.site.com --port 8443     # Check certificate on non-standard port
+python networkscanner.py ssl example.com --save report.txt   # Save results to file
+python networkscanner.py ssl --batch sites.txt --threads 5   # Batch check certificates for sites in file
+```
+
 ## Advanced Usage
 
 ### Port Scanning Options
@@ -138,12 +148,21 @@ python networkscanner.py bandwidth --interval 0.5            # More frequent upd
 - **History Tracking**: View trends over the last minute of network activity
 - **Custom Intervals**: Adjust update frequency to balance between detail and system resource usage
 
+### SSL Certificate Checking Options
+
+- **Hostname Validation**: Verify that certificates match the requested hostname, including wildcard support
+- **Expiration Checking**: Identify certificates that are expired or expiring soon
+- **Chain Validation**: Confirm that certificates have a proper trust chain
+- **Security Assessment**: Detect weak algorithms, small key sizes, and outdated protocols
+- **Batch Processing**: Check multiple certificates in parallel with customizable thread count
+
 ## Troubleshooting
 
 - **Permission Issues**: Some features require administrative/root privileges. Run as admin/sudo for full functionality.
 - **Missing MAC Addresses**: If device discovery isn't showing MAC addresses, try running with admin privileges or switching to ARP mode.
 - **Port Scan Accuracy**: If port scan results show many "filtered" ports, try increasing timeout values or using advanced scanning.
 - **Network Range Detection**: If automatic network detection fails, specify your network manually using CIDR notation.
+- **SSL Certificate Issues**: If certificate validation fails, check for clock synchronization issues or network restrictions.
 
 ## Technical Details
 

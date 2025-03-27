@@ -4,7 +4,7 @@ import sys
 import time
 from rich.console import Console
 from rich.panel import Panel
-from rich.prompt import Prompt, IntPrompt, FloatPrompt
+from rich.prompt import Prompt, IntPrompt, FloatPrompt, Confirm
 from rich.table import Table
 from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn
 from rich import box
@@ -16,6 +16,7 @@ from modules.dns_tools import DNSTools
 from modules.network_info import NetworkInfo
 from modules.device_discovery import DeviceDiscovery
 from modules.bandwidth_monitor import BandwidthMonitor
+from modules.ssl_checker import SSLCertificateChecker
 
 VERSION = "1.0.0"
 console = Console()
@@ -64,6 +65,7 @@ def main_menu():
             ("5", "📊 Network Info", "View local and public network details"),
             ("6", "🔎 Device Discovery", "Find devices on your network"),
             ("7", "📈 Bandwidth Monitor", "Track real-time network usage"),
+            ("8", "🔒 SSL Certificate Checker", "Verify SSL/TLS certificates"),
             ("q", "🚪 Exit", "Quit the application")
         ]
         
@@ -80,7 +82,7 @@ def main_menu():
         
         choice = Prompt.ask(
             "\n[bold cyan]Enter your choice[/bold cyan]", 
-            choices=["1", "2", "3", "4", "5", "6", "7", "q"], 
+            choices=["1", "2", "3", "4", "5", "6", "7", "8", "q"], 
             default="q",
             show_choices=True,
             show_default=True
@@ -100,6 +102,8 @@ def main_menu():
             device_discovery_menu()
         elif choice == "7":
             bandwidth_monitor_menu()
+        elif choice == "8":
+            ssl_checker_menu()
         elif choice == "q":
             console.print("\n[bold yellow]━━━ Thank you for using NetworkScan Pro ━━━[/bold yellow]", justify="center")
             sys.exit(0)
@@ -643,6 +647,44 @@ def bandwidth_monitor_menu():
     console.print("\n[bold cyan]━━━ Monitoring Complete ━━━[/bold cyan]", justify="center")
     input("\nPress Enter to return to main menu...")
 
+def ssl_checker_menu():
+    """SSL Certificate Checker menu."""
+    console = Console()
+    ssl_checker = SSLCertificateChecker(console)
+    
+    console.print("[bold cyan]SSL/TLS Certificate Checker[/bold cyan]")
+    console.print("Verify website certificates, check expiration dates, and validate certificate chains.\n")
+    
+    # Get hostname/URL
+    hostname = Prompt.ask("[yellow]Enter website hostname or URL[/yellow]")
+    if not hostname:
+        console.print("[bold red]Hostname cannot be empty.[/bold red]")
+        return
+    
+    # Ask for port (optional)
+    port_str = Prompt.ask("[yellow]Enter port number (default: 443)[/yellow]", default="443")
+    try:
+        port = int(port_str)
+    except ValueError:
+        console.print("[bold red]Invalid port number. Using default (443).[/bold red]")
+        port = 443
+    
+    # Display progress
+    with console.status(f"[bold green]Checking certificate for {hostname}:{port}...[/bold green]"):
+        ssl_checker.check_website(hostname, port)
+    
+    # Ask if user wants to save the result to a file
+    if Confirm.ask("[yellow]Would you like to save the results to a file?[/yellow]"):
+        filename = Prompt.ask("[yellow]Enter filename[/yellow]", default=f"{hostname}_cert_check.txt")
+        with open(filename, "w") as f:
+            # Redirect console output to file
+            file_console = Console(file=f, width=100)
+            file_checker = SSLCertificateChecker(file_console)
+            file_checker.check_website(hostname, port)
+        console.print(f"[green]Results saved to {filename}[/green]")
+    
+    input("\nPress Enter to return to the main menu...")
+
 def parse_arguments():
     """Parse command line arguments for direct CLI usage."""
     parser = argparse.ArgumentParser(description='NetworkScan Pro - Advanced CLI Network Utility')
@@ -692,6 +734,14 @@ def parse_arguments():
     bandwidth_parser.add_argument('--duration', '-d', type=int, help='Monitoring duration in seconds')
     bandwidth_parser.add_argument('--interval', '-n', type=float, default=1.0, 
                                  help='Update interval in seconds')
+    
+    # SSL Certificate Checker arguments
+    ssl_parser = subparsers.add_parser('ssl', help='Check SSL/TLS certificate')
+    ssl_parser.add_argument('hostname', help='Target hostname or URL', nargs='?')
+    ssl_parser.add_argument('--port', type=int, default=443, help='Target port (default: 443)')
+    ssl_parser.add_argument('--save', help='Save results to specified file')
+    ssl_parser.add_argument('--batch', help='Batch check certificates from file (one host[:port] per line)')
+    ssl_parser.add_argument('--threads', type=int, default=10, help='Number of threads for batch checking (default: 10)')
     
     return parser.parse_args()
 
@@ -798,6 +848,71 @@ def process_cli_arguments(args):
             duration=args.duration,
             update_interval=args.interval
         )
+
+    # SSL Certificate Checker
+    elif args.command == 'ssl':
+        console = Console()
+        ssl_checker = SSLCertificateChecker(console)
+        
+        if args.batch:
+            try:
+                with open(args.batch, 'r') as f:
+                    targets = []
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith('#'):
+                            continue
+                            
+                        if ':' in line:
+                            host, port = line.split(':', 1)
+                            try:
+                                port = int(port)
+                            except ValueError:
+                                console.print(f"[bold red]Invalid port for {line}, using default (443)[/bold red]")
+                                port = 443
+                        else:
+                            host = line
+                            port = 443
+                            
+                        targets.append((host, port))
+                    
+                    console.print(f"[bold cyan]Batch checking {len(targets)} certificates...[/bold cyan]")
+                    results = ssl_checker.batch_check(targets, args.threads)
+                    
+                    # Display results
+                    for target, result in results.items():
+                        console.print(f"\n[bold yellow]=== {target} ===[/bold yellow]")
+                        ssl_checker.display_certificate_info(result)
+                        
+                    # Save results if requested
+                    if args.save:
+                        with open(args.save, 'w') as f:
+                            file_console = Console(file=f, width=100)
+                            file_checker = SSLCertificateChecker(file_console)
+                            
+                            for target, result in results.items():
+                                file_console.print(f"\n=== {target} ===")
+                                file_checker.display_certificate_info(result)
+                                
+                        console.print(f"[green]Results saved to {args.save}[/green]")
+            except FileNotFoundError:
+                console.print(f"[bold red]Error: File not found: {args.batch}[/bold red]")
+        else:
+            if not args.hostname:
+                console.print("[bold red]Error: Hostname is required when not using batch mode[/bold red]")
+                sys.exit(1)
+                
+            # Single certificate check
+            ssl_checker.check_website(args.hostname, args.port)
+            
+            # Save results if requested
+            if args.save:
+                with open(args.save, 'w') as f:
+                    file_console = Console(file=f, width=100)
+                    file_checker = SSLCertificateChecker(file_console)
+                    file_checker.check_website(args.hostname, args.port)
+                    
+                console.print(f"[green]Results saved to {args.save}[/green]")
 
 if __name__ == "__main__":
     try:
