@@ -197,12 +197,15 @@ class PingUtility:
         self.console.print(f"[bold green]Target [yellow]{target}[/yellow] is reachable![/bold green]")
         
         if continuous:
+            # For continuous ping, we'll use our own implementation
+            self.console.print(f"\n[bold cyan]Starting continuous ping to [yellow]{target}[/yellow][/bold cyan]")
             try:
                 self._continuous_ping(target)
             except KeyboardInterrupt:
                 self.console.print("\n[yellow]Continuous ping stopped by user.[/yellow]")
         else:
             try:
+                # For standard ping, use the system ping command
                 # Prepare ping command based on platform
                 if platform_name == "Windows":
                     cmd = ["powershell", "-Command", f"ping -n {count} {target}"]
@@ -242,78 +245,74 @@ class PingUtility:
         total_received = 0
         times = []
         
-        # Create live display
-        live_table = Table(title=f"Continuous Ping to {target}")
-        live_table.add_column("Packets Sent", style="cyan", justify="right")
-        live_table.add_column("Packets Received", style="green", justify="right")
-        live_table.add_column("Packet Loss", style="yellow", justify="right")
-        live_table.add_column("Last RTT (ms)", style="magenta", justify="right")
-        live_table.add_column("Min RTT (ms)", style="blue", justify="right")
-        live_table.add_column("Avg RTT (ms)", style="blue", justify="right")
-        live_table.add_column("Max RTT (ms)", style="blue", justify="right")
+        # Show title and instructions
+        self.console.print(f"\n[bold cyan]Continuous Ping to {target}[/bold cyan]")
+        self.console.print("[yellow]Press Ctrl+C to stop the continuous ping[/yellow]\n")
         
-        # Add initial row
-        live_table.add_row("0", "0", "0.0%", "N/A", "N/A", "N/A", "N/A")
-        
-        # Create panel with instructions
-        instructions = Panel(
-            "[bold]Press Ctrl+C to stop the continuous ping[/bold]",
-            border_style="yellow"
-        )
-        
-        # Combine table and instructions
-        display = Align.center(live_table, vertical="top")
-        
-        # Start live display
-        with Live(display, refresh_per_second=4, console=self.console) as live:
-            try:
-                while not self.stop_continuous:
-                    result = self.ping_once(target)
-                    
-                    # Update totals
-                    total_sent += result["sent"]
-                    total_received += result["received"]
+        try:
+            while not self.stop_continuous:
+                # Perform a single ping
+                start_time = time.time()
+                result = self.ping_once(target)
+                ping_time = time.time() - start_time
+                
+                # Update totals
+                total_sent += 1
+                if result["status"] == "success":
+                    total_received += 1
                     
                     # Update times list
                     if result["times"]:
-                        times.extend(result["times"])
-                        
-                    # Calculate statistics
-                    loss_percent = 0.0 if total_sent == 0 else 100.0 - (total_received / total_sent * 100.0)
-                    min_time = min(times) if times else 0.0
-                    avg_time = sum(times) / len(times) if times else 0.0
-                    max_time = max(times) if times else 0.0
-                    
-                    # Handle the last time display properly
-                    if result["times"]:
-                        last_time = f"{result['times'][0]:.2f}"
-                    else:
-                        last_time = "Timeout"
-                    
-                    # Update table
-                    live_table.rows = []
-                    live_table.add_row(
-                        str(total_sent),
-                        str(total_received),
-                        f"{loss_percent:.1f}%",
-                        str(last_time),
-                        f"{min_time:.2f}" if times else "N/A",
-                        f"{avg_time:.2f}" if times else "N/A",
-                        f"{max_time:.2f}" if times else "N/A"
-                    )
-                    
-                    # Ensure we update the display with the table
-                    display = Align.center(live_table, vertical="top")
-                    live.update(display)
-                    
-                    # Explicitly flush the console output to ensure updates are visible
-                    self.console.file.flush()
-                    
-                    # Wait a second before next ping
-                    time.sleep(1)
-                    
-            except KeyboardInterrupt:
-                self.stop_continuous = True
+                        times.append(result["times"][0])
+                
+                # Calculate statistics
+                loss_percent = 0.0 if total_sent == 0 else 100.0 - (total_received / total_sent * 100.0)
+                min_time = min(times) if times else 0.0
+                avg_time = sum(times) / len(times) if times else 0.0
+                max_time = max(times) if times else 0.0
+                
+                # Get the RTT for this ping
+                if result["times"]:
+                    last_rtt = f"{result['times'][0]:.2f} ms"
+                else:
+                    last_rtt = "Timeout"
+                
+                # Build a table to display the current results
+                table = Table(show_header=True, title=f"Ping statistics after {total_sent} pings")
+                table.add_column("Packets Sent", style="cyan", justify="right")
+                table.add_column("Packets Received", style="green", justify="right")
+                table.add_column("Packet Loss", style="yellow", justify="right")
+                table.add_column("Last RTT", style="magenta", justify="right")
+                table.add_column("Min RTT", style="blue", justify="right")
+                table.add_column("Avg RTT", style="blue", justify="right")
+                table.add_column("Max RTT", style="blue", justify="right")
+                
+                min_str = f"{min_time:.2f} ms" if times else "N/A"
+                avg_str = f"{avg_time:.2f} ms" if times else "N/A"
+                max_str = f"{max_time:.2f} ms" if times else "N/A"
+                
+                table.add_row(
+                    str(total_sent),
+                    str(total_received),
+                    f"{loss_percent:.1f}%",
+                    last_rtt,
+                    min_str,
+                    avg_str,
+                    max_str
+                )
+                
+                # Clear the console and print the new table
+                self.console.clear()
+                self.console.print(f"[bold cyan]Continuous Ping to {target}[/bold cyan]")
+                self.console.print("[yellow]Press Ctrl+C to stop the continuous ping[/yellow]\n")
+                self.console.print(table)
+                
+                # Wait before next ping
+                time.sleep(1)
+                
+        except KeyboardInterrupt:
+            self.stop_continuous = True
+            self.console.print("\n[yellow]Continuous ping stopped by user.[/yellow]")
                 
     def _display_results(self, target: str, result: Dict[str, Union[str, float, int]]):
         """
