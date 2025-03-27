@@ -11,6 +11,7 @@ A feature-rich, visually appealing command-line network diagnostic tool with int
 - **Traceroute**: Visual path mapping with latency per hop
 - **DNS Tools**: A, MX, TXT, NS record lookup, reverse DNS, and DNS server testing
 - **Network Info**: Local IP configuration, public IP detection, and interface statistics
+- **Device Discovery**: Scan your local network to find all connected devices with IP/MAC addresses, hostnames, and vendor identification
 
 ## Screenshots
 
@@ -80,6 +81,14 @@ python networkscanner.py dns 8.8.8.8 --type reverse
 python networkscanner.py netinfo --type local
 python networkscanner.py netinfo --type public
 python networkscanner.py netinfo --type stats
+```
+
+#### Device Discovery
+
+```
+python networkscanner.py discover --network 192.168.1.0/24
+python networkscanner.py discover --interface "Ethernet"
+python networkscanner.py discover --ping --no-resolve
 ```
 
 ## Technical Details

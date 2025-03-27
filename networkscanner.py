@@ -14,6 +14,7 @@ from modules.ping_utility import PingUtility
 from modules.traceroute import Traceroute
 from modules.dns_tools import DNSTools
 from modules.network_info import NetworkInfo
+from modules.device_discovery import DeviceDiscovery
 
 VERSION = "1.0.0"
 console = Console()
@@ -60,6 +61,7 @@ def main_menu():
             ("3", "🌐 Traceroute", "Map the path to a destination"),
             ("4", "🔖 DNS Tools", "Lookup and test DNS records"),
             ("5", "📊 Network Info", "View local and public network details"),
+            ("6", "🔎 Device Discovery", "Find devices on your network"),
             ("q", "🚪 Exit", "Quit the application")
         ]
         
@@ -76,7 +78,7 @@ def main_menu():
         
         choice = Prompt.ask(
             "\n[bold cyan]Enter your choice[/bold cyan]", 
-            choices=["1", "2", "3", "4", "5", "q"], 
+            choices=["1", "2", "3", "4", "5", "6", "q"], 
             default="q",
             show_choices=True,
             show_default=True
@@ -92,6 +94,8 @@ def main_menu():
             dns_tools_menu()
         elif choice == "5":
             network_info_menu()
+        elif choice == "6":
+            device_discovery_menu()
         elif choice == "q":
             console.print("\n[bold yellow]━━━ Thank you for using NetworkScan Pro ━━━[/bold yellow]", justify="center")
             sys.exit(0)
@@ -410,6 +414,105 @@ def network_info_menu():
     console.print("\n[bold cyan]━━━ Network Info Complete ━━━[/bold cyan]", justify="center")
     input("\nPress Enter to return to main menu...")
 
+def device_discovery_menu():
+    """Handle the device discovery menu options."""
+    console.print("\n[bold cyan]━━━ DEVICE DISCOVERY ━━━[/bold cyan]", justify="center")
+    
+    # Create a visual explanation of device discovery
+    discovery_info = Panel(
+        "[dim]Device discovery scans your network to find connected devices and identify:\n"
+        "• IP and MAC addresses of each device\n"
+        "• Device hostnames (when available)\n"
+        "• Hardware vendor or device type identification[/dim]",
+        title="[bold]About Device Discovery[/bold]",
+        border_style="blue",
+        padding=(1, 1)
+    )
+    console.print(discovery_info)
+    
+    # Network range selection
+    console.print("\n[bold]Select network to scan:[/bold]")
+    
+    # Get available network interfaces and their ranges
+    discovery = DeviceDiscovery(console)
+    interfaces = discovery._get_network_interfaces()
+    
+    # Create a table of available networks
+    network_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
+    network_table.add_column(style="cyan", justify="center", width=3)
+    network_table.add_column(style="white")
+    network_table.add_column(style="dim")
+    
+    # Add the default network option
+    default_range = discovery._get_network_range()
+    network_table.add_row("[1]", f"Default network: {default_range}", 
+                         "Automatically detected network")
+    
+    # Add custom network option
+    network_table.add_row("[2]", "Custom network range", 
+                         "Specify a CIDR network (e.g., 192.168.0.0/24)")
+    
+    console.print(network_table)
+    
+    network_choice = Prompt.ask(
+        "[bold cyan]Choose network[/bold cyan]", 
+        choices=["1", "2"], 
+        default="1"
+    )
+    
+    network_range = None
+    if network_choice == "1":
+        network_range = default_range
+        console.print(f"[dim]Selected default network: {network_range}[/dim]")
+    elif network_choice == "2":
+        network_range = Prompt.ask(
+            "[bold]Enter network range in CIDR notation[/bold] [dim](e.g., 192.168.1.0/24)[/dim]"
+        )
+        console.print(f"[dim]Selected custom network: {network_range}[/dim]")
+    
+    # Scan options
+    console.print("\n[bold]Scan options:[/bold]")
+    
+    # Thread count
+    thread_count = IntPrompt.ask(
+        "[bold]Number of threads[/bold] [dim](higher = faster but more intensive)[/dim]", 
+        default=50,
+        show_default=True
+    )
+    
+    # Scan method selection
+    use_ping = Prompt.ask(
+        "[bold]Scan method[/bold]", 
+        choices=["arp", "ping"], 
+        default="arp"
+    ) == "ping"
+    
+    scan_method = "PING sweep" if use_ping else "ARP scan"
+    console.print(f"[dim]Selected {scan_method}[/dim]")
+    
+    # Hostname resolution
+    resolve_names = Prompt.ask(
+        "[bold]Resolve hostnames[/bold] [dim](slower but more informative)[/dim]", 
+        choices=["yes", "no"], 
+        default="yes"
+    ) == "yes"
+    
+    console.print(f"[dim]Hostname resolution: {'enabled' if resolve_names else 'disabled'}[/dim]")
+    
+    # Initialize and run discovery
+    with console.status("[bold green]Initializing device discovery...[/bold green]", spinner="dots"):
+        time.sleep(0.5)  # Short pause for visual effect
+    
+    discovery.discover(
+        network_range=network_range,
+        threads=thread_count,
+        use_ping=use_ping,
+        resolve_names=resolve_names
+    )
+    
+    console.print("\n[bold cyan]━━━ Discovery Complete ━━━[/bold cyan]", justify="center")
+    input("\nPress Enter to return to main menu...")
+
 def parse_arguments():
     """Parse command line arguments for direct CLI usage."""
     parser = argparse.ArgumentParser(description='NetworkScan Pro - Advanced CLI Network Utility')
@@ -444,6 +547,14 @@ def parse_arguments():
     net_parser = subparsers.add_parser('netinfo', help='Network information')
     net_parser.add_argument('--type', '-t', choices=['local', 'public', 'stats'], 
                            default='local', help='Type of network information')
+    
+    # Device discovery arguments
+    discover_parser = subparsers.add_parser('discover', help='Network device discovery')
+    discover_parser.add_argument('--network', '-n', help='Network range in CIDR notation (e.g., 192.168.1.0/24)')
+    discover_parser.add_argument('--interface', '-i', help='Network interface to scan')
+    discover_parser.add_argument('--threads', '-t', type=int, default=50, help='Number of threads to use')
+    discover_parser.add_argument('--ping', '-p', action='store_true', help='Use ping instead of ARP')
+    discover_parser.add_argument('--no-resolve', action='store_true', help='Disable hostname resolution')
     
     return parser.parse_args()
 
@@ -527,6 +638,20 @@ def process_cli_arguments(args):
             netinfo.show_public_ip()
         elif args.type == 'stats':
             netinfo.show_interface_stats()
+
+    # Device discovery
+    elif args.command == 'discover':
+        discovery = DeviceDiscovery(console)
+        network_range = args.network
+        resolve_names = not args.no_resolve
+            
+        discovery.discover(
+            network_range=network_range,
+            interface=args.interface,
+            threads=args.threads,
+            use_ping=args.ping,
+            resolve_names=resolve_names
+        )
 
 if __name__ == "__main__":
     try:
