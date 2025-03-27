@@ -10,6 +10,9 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.panel import Panel
 from rich.live import Live
 from rich.align import Align
+from rich.layout import Layout
+from rich.spinner import Spinner
+from rich import box
 
 class PingUtility:
     """Ping utility module for NetworkScan Pro."""
@@ -246,8 +249,14 @@ class PingUtility:
         times = []
         
         # Show title and instructions
-        self.console.print(f"\n[bold cyan]Continuous Ping to {target}[/bold cyan]")
-        self.console.print("[yellow]Press Ctrl+C to stop the continuous ping[/yellow]\n")
+        self.console.print(Panel(
+            "[bold yellow]Press Ctrl+C to stop the continuous ping[/bold yellow]",
+            border_style="yellow", 
+            padding=(1, 2)
+        ))
+        
+        # Keep track of consecutive timeouts for visual indication
+        consecutive_timeouts = 0
         
         try:
             while not self.stop_continuous:
@@ -260,10 +269,13 @@ class PingUtility:
                 total_sent += 1
                 if result["status"] == "success":
                     total_received += 1
+                    consecutive_timeouts = 0
                     
                     # Update times list
                     if result["times"]:
                         times.append(result["times"][0])
+                else:
+                    consecutive_timeouts += 1
                 
                 # Calculate statistics
                 loss_percent = 0.0 if total_sent == 0 else 100.0 - (total_received / total_sent * 100.0)
@@ -274,11 +286,27 @@ class PingUtility:
                 # Get the RTT for this ping
                 if result["times"]:
                     last_rtt = f"{result['times'][0]:.2f} ms"
+                    last_rtt_color = "green"
+                    if result["times"][0] > 100:
+                        last_rtt_color = "red"
+                    elif result["times"][0] > 50:
+                        last_rtt_color = "yellow"
+                    last_rtt_display = f"[{last_rtt_color}]{last_rtt}[/{last_rtt_color}]"
                 else:
-                    last_rtt = "Timeout"
+                    last_rtt_display = "[red]Timeout[/red]"
                 
-                # Build a table to display the current results
-                table = Table(show_header=True, title=f"Ping statistics after {total_sent} pings")
+                # Build a responsive table with better styling
+                table = Table(
+                    title=f"Continuous Ping to {target}",
+                    box=box.ROUNDED,
+                    title_style="bold cyan",
+                    border_style="blue",
+                    header_style="bold cyan",
+                    caption=f"Ping #{total_sent} | Last updated: {time.strftime('%H:%M:%S')}",
+                    caption_style="dim"
+                )
+                
+                # Add columns with better styling
                 table.add_column("Packets Sent", style="cyan", justify="right")
                 table.add_column("Packets Received", style="green", justify="right")
                 table.add_column("Packet Loss", style="yellow", justify="right")
@@ -287,25 +315,73 @@ class PingUtility:
                 table.add_column("Avg RTT", style="blue", justify="right")
                 table.add_column("Max RTT", style="blue", justify="right")
                 
+                # Format statistics with better styling
                 min_str = f"{min_time:.2f} ms" if times else "N/A"
                 avg_str = f"{avg_time:.2f} ms" if times else "N/A"
                 max_str = f"{max_time:.2f} ms" if times else "N/A"
                 
+                # Add status indicator for consecutive timeouts
+                status_indicator = ""
+                if consecutive_timeouts >= 3:
+                    status_indicator = " [bold red]⚠ Connection issues![/bold red]"
+                
+                # Add row with current statistics
                 table.add_row(
                     str(total_sent),
                     str(total_received),
                     f"{loss_percent:.1f}%",
-                    last_rtt,
+                    last_rtt_display,
                     min_str,
                     avg_str,
                     max_str
                 )
                 
-                # Clear the console and print the new table
-                self.console.clear()
-                self.console.print(f"[bold cyan]Continuous Ping to {target}[/bold cyan]")
-                self.console.print("[yellow]Press Ctrl+C to stop the continuous ping[/yellow]\n")
-                self.console.print(table)
+                # Create a history graph of recent pings (simplified visualization)
+                history_length = min(20, len(times))
+                if history_length > 0:
+                    recent_times = times[-history_length:]
+                    max_recent = max(recent_times)
+                    
+                    # Create a simplified graph
+                    graph_bars = []
+                    for t in recent_times:
+                        # Normalize and get color
+                        ratio = t / max(100, max_recent)  # Cap at 100ms for scaling
+                        bar_color = "green"
+                        if t > 100:
+                            bar_color = "red"
+                        elif t > 50:
+                            bar_color = "yellow"
+                        
+                        # Create bar of appropriate size (max 10 characters)
+                        bar_size = min(10, max(1, int(ratio * 10)))
+                        graph_bars.append(f"[{bar_color}]{'█' * bar_size}[/{bar_color}]")
+                    
+                    # Add the graph to a panel
+                    graph_panel = Panel(
+                        " ".join(graph_bars),
+                        title="[bold]Response Time History[/bold] [dim](recent pings, right = newest)[/dim]",
+                        border_style="blue"
+                    )
+                    
+                    # Clear the console and print everything
+                    self.console.clear()
+                    self.console.print(Panel(
+                        f"[bold yellow]Press Ctrl+C to stop the continuous ping[/bold yellow]{status_indicator}",
+                        border_style="yellow", 
+                        padding=(1, 2)
+                    ))
+                    self.console.print(table)
+                    self.console.print(graph_panel)
+                else:
+                    # Clear the console and print just the table if no history yet
+                    self.console.clear()
+                    self.console.print(Panel(
+                        f"[bold yellow]Press Ctrl+C to stop the continuous ping[/bold yellow]{status_indicator}",
+                        border_style="yellow", 
+                        padding=(1, 2)
+                    ))
+                    self.console.print(table)
                 
                 # Wait before next ping
                 time.sleep(1)

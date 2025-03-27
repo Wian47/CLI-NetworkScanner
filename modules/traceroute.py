@@ -7,6 +7,8 @@ from typing import List, Dict, Any, Optional
 from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.panel import Panel
+from rich import box
 
 class Traceroute:
     """Traceroute module for NetworkScan Pro."""
@@ -221,10 +223,28 @@ class Traceroute:
             target: Target that was traced
             hops: List of dictionaries with hop information
         """
-        # Create results table
-        table = Table(title=f"Traceroute Results for {target}")
+        # Create descriptive panels first
+        info_panel = Panel(
+            "[dim]• [blue]Route visualization[/blue] from your computer to the target\n"
+            "• [yellow]Asterisks (*)[/yellow] in IP column indicate routers that don't respond to ICMP\n"
+            "• [yellow]Asterisks (*)[/yellow] in ASN/ISP columns are placeholders (data not available)\n"
+            "• [magenta]RTT (Round Trip Time)[/magenta] shows latency at each hop[/dim]",
+            title="[bold]About Traceroute[/bold]",
+            border_style="blue",
+            padding=(1, 2)
+        )
+        self.console.print(info_panel)
+        
+        # Create results table with improved styling
+        table = Table(
+            title=f"Traceroute Results for {target}",
+            box=box.ROUNDED,
+            title_style="bold cyan", 
+            border_style="blue",
+            header_style="bold cyan"
+        )
         table.add_column("Hop", style="cyan", justify="right")
-        table.add_column("IP Address", style="yellow")
+        table.add_column("IP Address", style="bright_yellow")
         table.add_column("Hostname", style="green")
         table.add_column("Avg RTT (ms)", style="magenta", justify="right")
         table.add_column("ASN", style="blue")
@@ -235,19 +255,27 @@ class Traceroute:
             hop_num = str(hop["hop"])
             ip = hop["ip"]
             hostname = hop["hostname"]
-            avg_rtt = f"{hop['avg_rtt']:.2f}" if hop["avg_rtt"] is not None else "*"
-            asn = hop["asn"] or "*"
-            isp = hop["isp"] or "*"
+            avg_rtt = f"{hop['avg_rtt']:.2f}" if hop["avg_rtt"] is not None else "—"
+            asn = hop["asn"] or "—"
+            isp = hop["isp"] or "—"
             
             # Use appropriate colors for timeouts
             if ip == "*":
-                ip_display = f"[red]{ip}[/red]"
-                hostname_display = f"[red]{hostname}[/red]"
-                avg_rtt_display = f"[red]{avg_rtt}[/red]"
+                ip_display = f"[dim red]*[/dim red]"
+                hostname_display = f"[dim red]*[/dim red]"
+                avg_rtt_display = f"[dim red]—[/dim red]"
             else:
+                # Calculate color for RTT value (green for fast, yellow for medium, red for slow)
+                rtt_color = "green"
+                if hop["avg_rtt"] is not None:
+                    if hop["avg_rtt"] > 100:
+                        rtt_color = "red"
+                    elif hop["avg_rtt"] > 50:
+                        rtt_color = "yellow"
+                        
                 ip_display = ip
                 hostname_display = hostname
-                avg_rtt_display = avg_rtt
+                avg_rtt_display = f"[{rtt_color}]{avg_rtt}[/{rtt_color}]"
                 
             table.add_row(
                 hop_num,

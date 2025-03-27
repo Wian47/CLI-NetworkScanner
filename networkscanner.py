@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 import argparse
 import sys
+import time
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt, IntPrompt
 from rich.table import Table
 from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn
+from rich import box
 
 from modules.port_scanner import PortScanner
 from modules.ping_utility import PingUtility
@@ -19,41 +21,66 @@ console = Console()
 def display_banner():
     """Display ASCII art banner with tool name and version."""
     banner = """
-    ███╗   ██╗███████╗████████╗██╗    ██╗ ██████╗ ██████╗ ██╗  ██╗███████╗ ██████╗ █████╗ ███╗   ██╗
-    ████╗  ██║██╔════╝╚══██╔══╝██║    ██║██╔═══██╗██╔══██╗██║ ██╔╝██╔════╝██╔════╝██╔══██╗████╗  ██║
-    ██╔██╗ ██║█████╗     ██║   ██║ █╗ ██║██║   ██║██████╔╝█████╔╝ ███████╗██║     ███████║██╔██╗ ██║
-    ██║╚██╗██║██╔══╝     ██║   ██║███╗██║██║   ██║██╔══██╗██╔═██╗ ╚════██║██║     ██╔══██║██║╚██╗██║
-    ██║ ╚████║███████╗   ██║   ╚███╔███╔╝╚██████╔╝██║  ██║██║  ██╗███████║╚██████╗██║  ██║██║ ╚████║
-    ╚═╝  ╚═══╝╚══════╝   ╚═╝    ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝
-                                               PRO                                                    
+    ███╗   ██╗███████╗████████╗██╗    ██╗ ██████╗ ██████╗ ██╗  ██╗
+    ████╗  ██║██╔════╝╚══██╔══╝██║    ██║██╔═══██╗██╔══██╗██║ ██╔╝
+    ██╔██╗ ██║█████╗     ██║   ██║ █╗ ██║██║   ██║██████╔╝█████╔╝ 
+    ██║╚██╗██║██╔══╝     ██║   ██║███╗██║██║   ██║██╔══██╗██╔═██╗ 
+    ██║ ╚████║███████╗   ██║   ╚███╔███╔╝╚██████╔╝██║  ██║██║  ██╗
+    ╚═╝  ╚═══╝╚══════╝   ╚═╝    ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝
+                                                                   
+    ███████╗ ██████╗ █████╗ ███╗   ██╗    ██████╗ ██████╗  ██████╗ 
+    ██╔════╝██╔════╝██╔══██╗████╗  ██║    ██╔══██╗██╔══██╗██╔═══██╗
+    ███████╗██║     ███████║██╔██╗ ██║    ██████╔╝██████╔╝██║   ██║
+    ╚════██║██║     ██╔══██║██║╚██╗██║    ██╔═══╝ ██╔══██╗██║   ██║
+    ███████║╚██████╗██║  ██║██║ ╚████║    ██║     ██║  ██║╚██████╔╝
+    ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ 
     """
-    console.print(Panel(banner, subtitle=f"v{VERSION}", subtitle_align="right", border_style="blue"))
-    console.print("[bold blue]Advanced CLI Network Utility with Rich UI/UX[/bold blue]", justify="center")
+    panel = Panel(
+        banner, 
+        title=f"[bold white]v{VERSION}[/bold white]", 
+        title_align="right",
+        subtitle="[italic]Advanced Network Diagnostics[/italic]",
+        subtitle_align="center",
+        border_style="blue",
+        padding=(1, 2)
+    )
+    console.print(panel)
+    console.print("[bold blue]╾───────────────────────────────────────────────────────────────────────╼[/bold blue]", justify="center")
     console.print()
 
 def main_menu():
     """Display and handle the main menu options."""
     while True:
-        console.print("\n[bold cyan]MAIN MENU[/bold cyan]")
-        menu_table = Table(show_header=False, box=None)
-        menu_table.add_column(style="green")
-        menu_table.add_column(style="white")
+        console.print("\n[bold cyan]━━━ MAIN MENU ━━━[/bold cyan]", justify="center")
         
+        # Create a more visually appealing menu with icons
         menu_items = [
-            ("1", "Port Scanner"),
-            ("2", "Ping Utility"),
-            ("3", "Traceroute"),
-            ("4", "DNS Tools"),
-            ("5", "Network Info"),
-            ("q", "Quit")
+            ("1", "🔍 Port Scanner", "Scan for open ports on a target"),
+            ("2", "📶 Ping Utility", "Test connectivity to a host"),
+            ("3", "🌐 Traceroute", "Map the path to a destination"),
+            ("4", "🔖 DNS Tools", "Lookup and test DNS records"),
+            ("5", "📊 Network Info", "View local and public network details"),
+            ("q", "🚪 Exit", "Quit the application")
         ]
         
-        for key, desc in menu_items:
-            menu_table.add_row(f"[{key}]", desc)
+        # Create a stylized menu table
+        menu_table = Table(show_header=False, box=box.ROUNDED, expand=True, border_style="cyan")
+        menu_table.add_column(style="dim cyan", justify="center", width=5)
+        menu_table.add_column(style="bold white", justify="left")
+        menu_table.add_column(style="dim", justify="left")
+        
+        for key, desc, help_text in menu_items:
+            menu_table.add_row(f"[{key}]", desc, help_text)
             
         console.print(menu_table)
         
-        choice = Prompt.ask("\nEnter your choice", choices=["1", "2", "3", "4", "5", "q"], default="q")
+        choice = Prompt.ask(
+            "\n[bold cyan]Enter your choice[/bold cyan]", 
+            choices=["1", "2", "3", "4", "5", "q"], 
+            default="q",
+            show_choices=True,
+            show_default=True
+        )
         
         if choice == "1":
             port_scanner_menu()
@@ -66,187 +93,282 @@ def main_menu():
         elif choice == "5":
             network_info_menu()
         elif choice == "q":
-            console.print("[yellow]Thank you for using NetworkScan Pro![/yellow]")
+            console.print("\n[bold yellow]━━━ Thank you for using NetworkScan Pro ━━━[/bold yellow]", justify="center")
             sys.exit(0)
 
 def port_scanner_menu():
     """Handle the port scanner menu options."""
-    console.print("\n[bold cyan]PORT SCANNER[/bold cyan]")
+    console.print("\n[bold cyan]━━━ PORT SCANNER ━━━[/bold cyan]", justify="center")
     
-    target = Prompt.ask("[bold]Enter target IP or hostname[/bold]")
+    target = Prompt.ask("[bold]📍 Enter target IP or hostname[/bold]")
     
     # Port selection sub-menu
     console.print("\n[bold]Select port scan type:[/bold]")
-    port_table = Table(show_header=False, box=None)
-    port_table.add_column(style="green")
+    port_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
+    port_table.add_column(style="cyan", justify="center", width=3)
     port_table.add_column(style="white")
+    port_table.add_column(style="dim", width=30)
     
     port_options = [
-        ("1", "Common ports (20-25, 53, 80, 443, 3306, 3389, 8080)"),
-        ("2", "Full scan (1-1024)"),
-        ("3", "Custom range")
+        ("1", "Common ports", "Most frequently used (20-25, 53, 80, 443, 3306, etc.)"),
+        ("2", "Full scan", "First 1024 ports (may take longer)"),
+        ("3", "Custom range", "Specify your own port range")
     ]
     
-    for key, desc in port_options:
-        port_table.add_row(f"[{key}]", desc)
+    for key, desc, help_text in port_options:
+        port_table.add_row(f"[{key}]", desc, help_text)
         
     console.print(port_table)
     
-    port_choice = Prompt.ask("Enter your choice", choices=["1", "2", "3"], default="1")
+    port_choice = Prompt.ask(
+        "[bold cyan]Choose scan type[/bold cyan]", 
+        choices=["1", "2", "3"], 
+        default="1"
+    )
     
     ports = []
     if port_choice == "1":
         ports = [20, 21, 22, 23, 25, 53, 80, 443, 3306, 3389, 8080]
+        console.print("[dim]Selected common ports scan[/dim]")
     elif port_choice == "2":
         ports = list(range(1, 1025))
+        console.print("[dim]Selected full port scan (1-1024)[/dim]")
     elif port_choice == "3":
         port_range = Prompt.ask("[bold]Enter port range (e.g., 80-100)[/bold]")
         try:
             start, end = map(int, port_range.split('-'))
             ports = list(range(start, end + 1))
+            console.print(f"[dim]Selected custom range: {start}-{end} ({len(ports)} ports)[/dim]")
         except:
-            console.print("[bold red]Invalid port range. Using default ports (1-1024).[/bold red]")
+            console.print(Panel("[bold red]Invalid port range format![/bold red]\nUsing default ports (1-1024) instead.", 
+                               border_style="red", title="Error", padding=(1, 2)))
             ports = list(range(1, 1025))
+    
+    # Speed/thread options
+    thread_count = IntPrompt.ask(
+        "[bold]Select thread count[/bold] [dim](higher = faster but more resource intensive)[/dim]", 
+        default=20,
+        show_default=True
+    )
     
     # Initialize and run port scanner
     scanner = PortScanner(console)
-    scanner.scan(target, ports)
+    scanner.scan(target, ports, num_threads=thread_count)
     
+    console.print("\n[bold cyan]━━━ Scan Complete ━━━[/bold cyan]", justify="center")
     input("\nPress Enter to return to main menu...")
 
 def ping_utility_menu():
     """Handle the ping utility menu options."""
-    console.print("\n[bold cyan]PING UTILITY[/bold cyan]")
+    console.print("\n[bold cyan]━━━ PING UTILITY ━━━[/bold cyan]", justify="center")
     
-    target = Prompt.ask("[bold]Enter target IP or hostname[/bold]")
+    target = Prompt.ask("[bold]📍 Enter target IP or hostname[/bold]")
     
     # Ping options sub-menu
     console.print("\n[bold]Select ping type:[/bold]")
-    ping_table = Table(show_header=False, box=None)
-    ping_table.add_column(style="green")
-    ping_table.add_column(style="white")
+    ping_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
+    ping_table.add_column(style="cyan", justify="center", width=3)
+    ping_table.add_column(style="white", no_wrap=True)
+    ping_table.add_column(style="dim")
     
     ping_options = [
-        ("1", "Standard ping (4 packets)"),
-        ("2", "Continuous ping (press Ctrl+C to stop)"),
-        ("3", "Custom count")
+        ("1", "Standard ping", "Send 4 ICMP echo requests and display statistics"),
+        ("2", "Continuous ping", "Send ICMP echo requests until stopped (press Ctrl+C)"),
+        ("3", "Custom count", "Specify the number of pings to send")
     ]
     
-    for key, desc in ping_options:
-        ping_table.add_row(f"[{key}]", desc)
+    for key, desc, help_text in ping_options:
+        ping_table.add_row(f"[{key}]", desc, help_text)
         
     console.print(ping_table)
     
-    ping_choice = Prompt.ask("Enter your choice", choices=["1", "2", "3"], default="1")
+    ping_choice = Prompt.ask(
+        "[bold cyan]Choose ping type[/bold cyan]", 
+        choices=["1", "2", "3"], 
+        default="1"
+    )
     
     count = 4
     continuous = False
     
     if ping_choice == "1":
         count = 4
+        console.print("[dim]Selected standard ping (4 packets)[/dim]")
     elif ping_choice == "2":
         continuous = True
+        console.print("[dim]Selected continuous ping (press Ctrl+C to stop)[/dim]")
     elif ping_choice == "3":
-        count = IntPrompt.ask("[bold]Enter number of pings[/bold]", default=4)
+        count = IntPrompt.ask(
+            "[bold]Enter number of pings[/bold]", 
+            default=4,
+            show_default=True
+        )
+        console.print(f"[dim]Selected custom ping ({count} packets)[/dim]")
     
     # Initialize and run ping utility
     ping = PingUtility(console)
+    
+    with console.status("[bold green]Initializing ping...[/bold green]", spinner="dots"):
+        time.sleep(0.5)  # Short pause for visual effect
+        
     ping.ping(target, count=count, continuous=continuous)
+    
+    if not continuous:
+        console.print("\n[bold cyan]━━━ Ping Complete ━━━[/bold cyan]", justify="center")
     
     input("\nPress Enter to return to main menu...")
 
 def traceroute_menu():
     """Handle the traceroute menu options."""
-    console.print("\n[bold cyan]TRACEROUTE[/bold cyan]")
+    console.print("\n[bold cyan]━━━ TRACEROUTE ━━━[/bold cyan]", justify="center")
     
-    target = Prompt.ask("[bold]Enter target IP or hostname[/bold]")
-    max_hops = IntPrompt.ask("[bold]Enter maximum hops[/bold]", default=30)
+    target = Prompt.ask("[bold]📍 Enter target IP or hostname[/bold]")
+    
+    # Create a visual explanation of traceroute
+    trace_info = Panel(
+        "[dim]Traceroute maps the network path between your computer and the target, showing:\n"
+        "• Each router/hop along the way\n"
+        "• Response time at each hop\n"
+        "• Network information where available[/dim]",
+        title="[bold]About Traceroute[/bold]",
+        border_style="blue",
+        padding=(1, 1)
+    )
+    console.print(trace_info)
+    
+    max_hops = IntPrompt.ask(
+        "[bold]Enter maximum hops[/bold] [dim](path length limit)[/dim]", 
+        default=30,
+        show_default=True
+    )
     
     # Initialize and run traceroute
     tr = Traceroute(console)
+    
+    with console.status("[bold green]Initializing traceroute...[/bold green]", spinner="dots"):
+        time.sleep(0.5)  # Short pause for visual effect
+    
     tr.trace(target, max_hops=max_hops)
     
+    console.print("\n[bold cyan]━━━ Trace Complete ━━━[/bold cyan]", justify="center")
     input("\nPress Enter to return to main menu...")
 
 def dns_tools_menu():
     """Handle the DNS tools menu options."""
-    console.print("\n[bold cyan]DNS TOOLS[/bold cyan]")
+    console.print("\n[bold cyan]━━━ DNS TOOLS ━━━[/bold cyan]", justify="center")
+    
+    # DNS tools explanation panel
+    dns_info = Panel(
+        "[dim]DNS (Domain Name System) translates domain names to IP addresses.\n"
+        "These tools allow you to query different DNS record types and test DNS servers.[/dim]",
+        title="[bold]About DNS Tools[/bold]",
+        border_style="blue",
+        padding=(1, 1)
+    )
+    console.print(dns_info)
     
     # DNS tools sub-menu
-    dns_table = Table(show_header=False, box=None)
-    dns_table.add_column(style="green")
-    dns_table.add_column(style="white")
+    dns_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
+    dns_table.add_column(style="cyan", justify="center", width=3)
+    dns_table.add_column(style="white", no_wrap=True)
+    dns_table.add_column(style="dim")
     
     dns_options = [
-        ("1", "A Record Lookup"),
-        ("2", "MX Record Lookup"),
-        ("3", "TXT Record Lookup"),
-        ("4", "NS Record Lookup"),
-        ("5", "Reverse DNS Lookup"),
-        ("6", "DNS Server Test"),
-        ("7", "Return to main menu")
+        ("1", "A Record Lookup", "Find IP addresses for a domain"),
+        ("2", "MX Record Lookup", "Find mail servers for a domain"),
+        ("3", "TXT Record Lookup", "Find text records (SPF, DKIM, etc.)"),
+        ("4", "NS Record Lookup", "Find name servers for a domain"),
+        ("5", "Reverse DNS Lookup", "Find domain name for an IP address"),
+        ("6", "DNS Server Test", "Test a specific DNS server"),
+        ("7", "Return to main menu", "Go back to the main menu")
     ]
     
-    for key, desc in dns_options:
-        dns_table.add_row(f"[{key}]", desc)
+    for key, desc, help_text in dns_options:
+        dns_table.add_row(f"[{key}]", desc, help_text)
         
     console.print(dns_table)
     
-    dns_choice = Prompt.ask("Enter your choice", choices=["1", "2", "3", "4", "5", "6", "7"], default="1")
+    dns_choice = Prompt.ask(
+        "[bold cyan]Choose DNS tool[/bold cyan]", 
+        choices=["1", "2", "3", "4", "5", "6", "7"], 
+        default="1"
+    )
     
     if dns_choice == "7":
         return
     
     # Get domain name based on lookup type
     if dns_choice in ["1", "2", "3", "4"]:
-        domain = Prompt.ask("[bold]Enter domain name[/bold]")
+        domain = Prompt.ask("[bold]📝 Enter domain name[/bold]")
+        console.print(f"[dim]Looking up records for {domain}...[/dim]")
     elif dns_choice == "5":
-        domain = Prompt.ask("[bold]Enter IP address[/bold]")
+        domain = Prompt.ask("[bold]🔢 Enter IP address[/bold]")
+        console.print(f"[dim]Performing reverse lookup for {domain}...[/dim]")
     elif dns_choice == "6":
-        domain = Prompt.ask("[bold]Enter domain name to test[/bold]")
-        dns_server = Prompt.ask("[bold]Enter DNS server to test (default: 8.8.8.8)[/bold]", default="8.8.8.8")
+        domain = Prompt.ask("[bold]📝 Enter domain name to test[/bold]")
+        dns_server = Prompt.ask("[bold]🖥️ Enter DNS server to test[/bold]", default="8.8.8.8")
+        console.print(f"[dim]Testing {dns_server} with {domain}...[/dim]")
     
     # Initialize DNS tools
     dns = DNSTools(console)
     
-    # Perform requested lookup
-    if dns_choice == "1":
-        dns.lookup_a(domain)
-    elif dns_choice == "2":
-        dns.lookup_mx(domain)
-    elif dns_choice == "3":
-        dns.lookup_txt(domain)
-    elif dns_choice == "4":
-        dns.lookup_ns(domain)
-    elif dns_choice == "5":
-        dns.reverse_lookup(domain)
-    elif dns_choice == "6":
-        dns.test_dns_server(domain, dns_server)
+    with console.status("[bold green]Performing DNS lookup...[/bold green]", spinner="dots"):
+        time.sleep(0.5)  # Short pause for visual effect
+        
+        # Perform requested lookup
+        if dns_choice == "1":
+            dns.lookup_a(domain)
+        elif dns_choice == "2":
+            dns.lookup_mx(domain)
+        elif dns_choice == "3":
+            dns.lookup_txt(domain)
+        elif dns_choice == "4":
+            dns.lookup_ns(domain)
+        elif dns_choice == "5":
+            dns.reverse_lookup(domain)
+        elif dns_choice == "6":
+            dns.test_dns_server(domain, dns_server)
     
+    console.print("\n[bold cyan]━━━ DNS Lookup Complete ━━━[/bold cyan]", justify="center")
     input("\nPress Enter to return to main menu...")
 
 def network_info_menu():
     """Handle the network info menu options."""
-    console.print("\n[bold cyan]NETWORK INFO[/bold cyan]")
+    console.print("\n[bold cyan]━━━ NETWORK INFO ━━━[/bold cyan]", justify="center")
+    
+    # Network info explanation panel
+    net_info = Panel(
+        "[dim]View and analyze information about your network interfaces,\n"
+        "local configuration, and internet connectivity.[/dim]",
+        title="[bold]About Network Info[/bold]",
+        border_style="blue",
+        padding=(1, 1)
+    )
+    console.print(net_info)
     
     # Network info sub-menu
-    net_table = Table(show_header=False, box=None)
-    net_table.add_column(style="green")
-    net_table.add_column(style="white")
+    net_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
+    net_table.add_column(style="cyan", justify="center", width=3)
+    net_table.add_column(style="white", no_wrap=True)
+    net_table.add_column(style="dim")
     
     net_options = [
-        ("1", "Local IP Configuration"),
-        ("2", "Public IP Detection"),
-        ("3", "Interface Statistics"),
-        ("4", "Return to main menu")
+        ("1", "🖧 Local IP Configuration", "View your local network addresses and interfaces"),
+        ("2", "🌐 Public IP Detection", "Discover your public-facing IP address"),
+        ("3", "📊 Interface Statistics", "Show traffic statistics for network adapters"),
+        ("4", "Return to main menu", "Go back to the main menu")
     ]
     
-    for key, desc in net_options:
-        net_table.add_row(f"[{key}]", desc)
+    for key, desc, help_text in net_options:
+        net_table.add_row(f"[{key}]", desc, help_text)
         
     console.print(net_table)
     
-    net_choice = Prompt.ask("Enter your choice", choices=["1", "2", "3", "4"], default="1")
+    net_choice = Prompt.ask(
+        "[bold cyan]Choose option[/bold cyan]", 
+        choices=["1", "2", "3", "4"], 
+        default="1"
+    )
     
     if net_choice == "4":
         return
@@ -254,14 +376,18 @@ def network_info_menu():
     # Initialize network info
     netinfo = NetworkInfo(console)
     
-    # Perform requested function
-    if net_choice == "1":
-        netinfo.show_local_ip()
-    elif net_choice == "2":
-        netinfo.show_public_ip()
-    elif net_choice == "3":
-        netinfo.show_interface_stats()
+    with console.status("[bold green]Gathering network information...[/bold green]", spinner="dots"):
+        time.sleep(0.5)  # Short pause for visual effect
+        
+        # Perform requested function
+        if net_choice == "1":
+            netinfo.show_local_ip()
+        elif net_choice == "2":
+            netinfo.show_public_ip()
+        elif net_choice == "3":
+            netinfo.show_interface_stats()
     
+    console.print("\n[bold cyan]━━━ Network Info Complete ━━━[/bold cyan]", justify="center")
     input("\nPress Enter to return to main menu...")
 
 def parse_arguments():
