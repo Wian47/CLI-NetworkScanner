@@ -728,10 +728,16 @@ def ip_geolocation_menu():
     )
     
     output_file = None
+    open_map = False
     if html_output:
         output_file = Prompt.ask(
             "[bold cyan]Enter output HTML file path[/bold cyan]",
             default="geomap.html"
+        )
+        
+        open_map = Confirm.ask(
+            "[bold cyan]Automatically open the map in browser?[/bold cyan]",
+            default=True
         )
     
     # Initialize geolocation module
@@ -740,11 +746,11 @@ def ip_geolocation_menu():
     if geo_choice == "1":
         # IP lookup
         target = Prompt.ask("[bold]📍 Enter IP address or hostname[/bold]")
-        geolocation.lookup_ip(target, output_file)
+        geolocation.lookup_ip(target, output_file, open_map)
     elif geo_choice == "2":
         # Path tracing with geolocation
         target = Prompt.ask("[bold]📍 Enter target IP address or hostname[/bold]")
-        geolocation.trace_path(target, output_file)
+        geolocation.trace_path(target, output_file, open_map)
     
     input("\nPress Enter to return to main menu...")
 
@@ -812,6 +818,8 @@ def parse_arguments():
     geo_parser.add_argument('--trace', '-t', action='store_true', 
                            help='Trace path to target with geolocation')
     geo_parser.add_argument('--output', '-o', help='Save interactive HTML map to specified file')
+    geo_parser.add_argument('--open', '-b', action='store_true', 
+                           help='Automatically open the generated map in the default browser')
     
     return parser.parse_args()
 
@@ -997,10 +1005,10 @@ def process_cli_arguments(args):
         
         if args.trace:
             # Trace path with geolocation
-            geolocation.trace_path(args.target, args.output)
+            geolocation.trace_path(args.target, args.output, args.open)
         else:
             # Single IP lookup
-            geolocation.lookup_ip(args.target, args.output)
+            geolocation.lookup_ip(args.target, args.output, args.open)
 
     else:
         # Interactive mode

@@ -5,6 +5,7 @@ import os
 import time
 import subprocess
 import folium
+import webbrowser
 from typing import Dict, List, Optional, Tuple, Any
 from rich.console import Console
 from rich.table import Table
@@ -74,13 +75,14 @@ class IPGeolocation:
         except Exception as e:
             return {"status": "failed", "message": str(e)}
     
-    def lookup_ip(self, ip: str, output_file: Optional[str] = None) -> None:
+    def lookup_ip(self, ip: str, output_file: Optional[str] = None, open_map: bool = False) -> None:
         """
         Look up and display geolocation information for an IP address.
         
         Args:
             ip: The IP address to look up
             output_file: Optional HTML file to output the map to
+            open_map: Whether to automatically open the map in a browser
         """
         self.console.print(f"Looking up geolocation information for [cyan]{ip}[/cyan]")
         
@@ -141,6 +143,10 @@ class IPGeolocation:
             # Generate HTML map
             self._generate_ip_map(geo_data, output_file)
             self.console.print(f"[green]Interactive map saved to: [bold]{output_file}[/bold][/green]")
+            
+            # Open the map if requested
+            if open_map:
+                self.open_html_map(output_file)
     
     def _display_ascii_map(self, geo_data: Dict[str, Any]) -> None:
         """
@@ -252,13 +258,14 @@ class IPGeolocation:
         # Save the map to an HTML file
         m.save(output_file)
     
-    def trace_path(self, target: str, output_file: Optional[str] = None) -> None:
+    def trace_path(self, target: str, output_file: Optional[str] = None, open_map: bool = False) -> None:
         """
         Trace network path to a target and display geolocation for each hop.
         
         Args:
             target: The target hostname or IP address
             output_file: Optional HTML file to output the map to
+            open_map: Whether to automatically open the map in a browser
         """
         self.console.print(f"Tracing path to [cyan]{target}[/cyan] with geolocation...")
         
@@ -424,6 +431,10 @@ class IPGeolocation:
                 # Generate interactive HTML map
                 self._generate_path_map(hops, target, output_file)
                 self.console.print(f"[green]Interactive map saved to: [bold]{output_file}[/bold][/green]")
+            
+            # Open the map if requested
+            if open_map:
+                self.open_html_map(output_file)
             
         except Exception as e:
             self.console.print(f"[bold red]Error during traceroute: {str(e)}[/bold red]")
@@ -622,6 +633,27 @@ class IPGeolocation:
         
         # Save the map to an HTML file
         m.save(output_file)
+    
+    def open_html_map(self, output_file: str) -> None:
+        """
+        Open the generated HTML map in the default web browser.
+        
+        Args:
+            output_file: Path to the HTML file to open
+        """
+        if not os.path.exists(output_file):
+            self.console.print(f"[bold red]Error: Map file not found: {output_file}[/bold red]")
+            return
+            
+        try:
+            # Convert to absolute path to ensure proper opening
+            abs_path = os.path.abspath(output_file)
+            
+            # Open the file in the default web browser
+            webbrowser.open('file://' + abs_path, new=2)
+            self.console.print(f"[green]Map opened in your default web browser[/green]")
+        except Exception as e:
+            self.console.print(f"[bold red]Error opening map: {str(e)}[/bold red]")
     
     def _is_valid_ip(self, ip: str) -> bool:
         """
