@@ -7,8 +7,8 @@ A feature-rich, visually appealing command-line network diagnostic tool with int
 ## Features
 
 - **Port Scanner**: Scan single IPs or ranges with service detection and response time measurement
-- **Ping Utility**: Standard ping with statistics and continuous ping mode
-- **Traceroute**: Visual path mapping with latency per hop
+- **Ping Utility**: Standard ping with statistics and continuous ping mode with real-time visualization
+- **Traceroute**: Visual path mapping with latency per hop and network geography information
 - **DNS Tools**: A, MX, TXT, NS record lookup, reverse DNS, and DNS server testing
 - **Network Info**: Local IP configuration, public IP detection, and interface statistics
 - **Device Discovery**: Scan your local network to find all connected devices with IP/MAC addresses, hostnames, and vendor identification
@@ -19,6 +19,13 @@ Here are some example screenshots of NetworkScan Pro in action:
 
 ![Port Scanner](https://via.placeholder.com/400x300/222222/00ff00?text=Port+Scanner)
 ![Ping Utility](https://via.placeholder.com/400x300/222222/ffff00?text=Ping+Utility)
+
+## Requirements
+
+- **Python 3.8+** or newer
+- Administrative/root privileges for some advanced features (SYN scanning, ARP device discovery)
+- Network connectivity
+- Supported platforms: Windows, macOS, Linux
 
 ## Installation
 
@@ -43,6 +50,8 @@ Run the tool without arguments to enter the interactive menu:
 python networkscanner.py
 ```
 
+The interactive menu provides a user-friendly interface with detailed options and help text for each feature.
+
 ### Command Line Arguments
 
 NetworkScan Pro also supports direct command line usage:
@@ -52,6 +61,7 @@ NetworkScan Pro also supports direct command line usage:
 ```
 python networkscanner.py scan example.com --ports 80,443
 python networkscanner.py scan 192.168.1.1 --common
+python networkscanner.py scan 8.8.8.8 --ports 1-1000 --threads 50
 ```
 
 #### Ping Utility
@@ -59,12 +69,14 @@ python networkscanner.py scan 192.168.1.1 --common
 ```
 python networkscanner.py ping example.com --count 10
 python networkscanner.py ping 192.168.1.1 --continuous
+python networkscanner.py ping google.com --count 20
 ```
 
 #### Traceroute
 
 ```
 python networkscanner.py trace example.com --max-hops 20
+python networkscanner.py trace 8.8.8.8 --max-hops 15
 ```
 
 #### DNS Tools
@@ -73,6 +85,8 @@ python networkscanner.py trace example.com --max-hops 20
 python networkscanner.py dns example.com --type a
 python networkscanner.py dns example.com --type mx
 python networkscanner.py dns 8.8.8.8 --type reverse
+python networkscanner.py dns gmail.com --type txt
+python networkscanner.py dns example.com --type test --server 1.1.1.1
 ```
 
 #### Network Info
@@ -86,10 +100,32 @@ python networkscanner.py netinfo --type stats
 #### Device Discovery
 
 ```
-python networkscanner.py discover --network 192.168.1.0/24
-python networkscanner.py discover --interface "Ethernet"
-python networkscanner.py discover --ping --no-resolve
+python networkscanner.py discover                            # Auto-detect network and scan
+python networkscanner.py discover --network 192.168.1.0/24   # Scan specific network
+python networkscanner.py discover --interface "Ethernet"     # Scan specific interface
+python networkscanner.py discover --ping --no-resolve        # Use ping instead of ARP, skip hostname resolution
+python networkscanner.py discover --threads 100              # Use more threads for faster scanning
 ```
+
+## Advanced Usage
+
+### Port Scanning Options
+
+- **Regular vs. Advanced Scanning**: The tool will automatically use SYN scanning when run with admin privileges for better stealth and accuracy
+- **Thread Customization**: Adjust thread count to balance speed vs. system resource usage
+
+### Device Discovery Options
+
+- **ARP vs. Ping**: ARP scanning is faster and provides MAC addresses but requires admin privileges, while ping works on any system
+- **Hostname Resolution**: Enable/disable hostname lookups depending on speed requirements
+- **Network Range**: Automatically detects your network or allows custom CIDR notation networks
+
+## Troubleshooting
+
+- **Permission Issues**: Some features require administrative/root privileges. Run as admin/sudo for full functionality.
+- **Missing MAC Addresses**: If device discovery isn't showing MAC addresses, try running with admin privileges or switching to ARP mode.
+- **Port Scan Accuracy**: If port scan results show many "filtered" ports, try increasing timeout values or using advanced scanning.
+- **Network Range Detection**: If automatic network detection fails, specify your network manually using CIDR notation.
 
 ## Technical Details
 
@@ -108,3 +144,9 @@ MIT License
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Acknowledgements
+
+- The scapy development team
+- Rich library contributors
+- Networking communities for testing and feedback
