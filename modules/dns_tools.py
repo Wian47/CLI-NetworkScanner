@@ -22,7 +22,7 @@ class DNSTools:
             domain: Domain name to lookup
             dns_server: Optional DNS server to use
         """
-        self.console.print(f"[bold]Looking up A records for [yellow]{domain}[/yellow][/bold]")
+        self.console.print(f"Looking up A records for [yellow]{domain}[/yellow]")
         
         try:
             # Create resolver
@@ -32,19 +32,10 @@ class DNSTools:
             if dns_server:
                 resolver.nameservers = [dns_server]
                 
-            # Create progress spinner
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[bold blue]Looking up A records..."),
-                console=self.console
-            ) as progress:
-                # Create task for progress tracking
-                task_id = progress.add_task("Looking up...")
-                
-                # Perform lookup
-                start_time = time.time()
-                answers = resolver.resolve(domain, 'A')
-                lookup_time = time.time() - start_time
+            # Perform lookup without progress spinner
+            start_time = time.time()
+            answers = resolver.resolve(domain, 'A')
+            lookup_time = time.time() - start_time
                 
             # Display results
             self._display_lookup_results(domain, 'A', answers, lookup_time)
@@ -66,7 +57,7 @@ class DNSTools:
             domain: Domain name to lookup
             dns_server: Optional DNS server to use
         """
-        self.console.print(f"[bold]Looking up MX records for [yellow]{domain}[/yellow][/bold]")
+        self.console.print(f"Looking up MX records for [yellow]{domain}[/yellow]")
         
         try:
             # Create resolver
@@ -76,19 +67,10 @@ class DNSTools:
             if dns_server:
                 resolver.nameservers = [dns_server]
                 
-            # Create progress spinner
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[bold blue]Looking up MX records..."),
-                console=self.console
-            ) as progress:
-                # Create task for progress tracking
-                task_id = progress.add_task("Looking up...")
-                
-                # Perform lookup
-                start_time = time.time()
-                answers = resolver.resolve(domain, 'MX')
-                lookup_time = time.time() - start_time
+            # Perform lookup without progress spinner
+            start_time = time.time()
+            answers = resolver.resolve(domain, 'MX')
+            lookup_time = time.time() - start_time
                 
             # Display results
             self._display_lookup_results(domain, 'MX', answers, lookup_time)
@@ -110,7 +92,7 @@ class DNSTools:
             domain: Domain name to lookup
             dns_server: Optional DNS server to use
         """
-        self.console.print(f"[bold]Looking up TXT records for [yellow]{domain}[/yellow][/bold]")
+        self.console.print(f"Looking up TXT records for [yellow]{domain}[/yellow]")
         
         try:
             # Create resolver
@@ -120,19 +102,10 @@ class DNSTools:
             if dns_server:
                 resolver.nameservers = [dns_server]
                 
-            # Create progress spinner
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[bold blue]Looking up TXT records..."),
-                console=self.console
-            ) as progress:
-                # Create task for progress tracking
-                task_id = progress.add_task("Looking up...")
-                
-                # Perform lookup
-                start_time = time.time()
-                answers = resolver.resolve(domain, 'TXT')
-                lookup_time = time.time() - start_time
+            # Perform lookup without progress spinner
+            start_time = time.time()
+            answers = resolver.resolve(domain, 'TXT')
+            lookup_time = time.time() - start_time
                 
             # Display results
             self._display_lookup_results(domain, 'TXT', answers, lookup_time)
@@ -154,7 +127,7 @@ class DNSTools:
             domain: Domain name to lookup
             dns_server: Optional DNS server to use
         """
-        self.console.print(f"[bold]Looking up NS records for [yellow]{domain}[/yellow][/bold]")
+        self.console.print(f"Looking up NS records for [yellow]{domain}[/yellow]")
         
         try:
             # Create resolver
@@ -164,19 +137,10 @@ class DNSTools:
             if dns_server:
                 resolver.nameservers = [dns_server]
                 
-            # Create progress spinner
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[bold blue]Looking up NS records..."),
-                console=self.console
-            ) as progress:
-                # Create task for progress tracking
-                task_id = progress.add_task("Looking up...")
-                
-                # Perform lookup
-                start_time = time.time()
-                answers = resolver.resolve(domain, 'NS')
-                lookup_time = time.time() - start_time
+            # Perform lookup without progress spinner
+            start_time = time.time()
+            answers = resolver.resolve(domain, 'NS')
+            lookup_time = time.time() - start_time
                 
             # Display results
             self._display_lookup_results(domain, 'NS', answers, lookup_time)
@@ -198,7 +162,7 @@ class DNSTools:
             ip: IP address to lookup
             dns_server: Optional DNS server to use
         """
-        self.console.print(f"[bold]Performing reverse DNS lookup for [yellow]{ip}[/yellow][/bold]")
+        self.console.print(f"Performing reverse DNS lookup for [yellow]{ip}[/yellow]")
         
         try:
             # Create resolver
@@ -208,20 +172,11 @@ class DNSTools:
             if dns_server:
                 resolver.nameservers = [dns_server]
                 
-            # Create progress spinner
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[bold blue]Performing reverse lookup..."),
-                console=self.console
-            ) as progress:
-                # Create task for progress tracking
-                task_id = progress.add_task("Looking up...")
-                
-                # Perform lookup
-                start_time = time.time()
-                addr = dns.reversename.from_address(ip)
-                answers = resolver.resolve(addr, 'PTR')
-                lookup_time = time.time() - start_time
+            # Perform lookup without progress spinner
+            start_time = time.time()
+            addr = dns.reversename.from_address(ip)
+            answers = resolver.resolve(addr, 'PTR')
+            lookup_time = time.time() - start_time
                 
             # Create results table
             table = Table(title=f"Reverse DNS Lookup Results for {ip}")
@@ -248,7 +203,7 @@ class DNSTools:
             domain: Domain name to lookup
             dns_server: DNS server to test
         """
-        self.console.print(f"[bold]Testing DNS server [yellow]{dns_server}[/yellow] with domain [yellow]{domain}[/yellow][/bold]")
+        self.console.print(f"Testing DNS server [yellow]{dns_server}[/yellow] with domain [yellow]{domain}[/yellow]")
         
         # List of record types to test
         record_types = ['A', 'MX', 'NS', 'TXT']
@@ -259,48 +214,36 @@ class DNSTools:
             resolver = dns.resolver.Resolver()
             resolver.nameservers = [dns_server]
             
-            # Create progress spinner
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[bold blue]Testing DNS server..."),
-                console=self.console
-            ) as progress:
-                # Create task for progress tracking
-                task_id = progress.add_task("Testing...", total=len(record_types))
-                
-                # Perform lookups for each record type
-                for record_type in record_types:
-                    try:
-                        start_time = time.time()
-                        answers = resolver.resolve(domain, record_type)
-                        lookup_time = time.time() - start_time
-                        
-                        results.append({
-                            "record_type": record_type,
-                            "status": "success",
-                            "count": len(answers),
-                            "time": lookup_time
-                        })
-                        
-                    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
-                        results.append({
-                            "record_type": record_type,
-                            "status": "no_records",
-                            "count": 0,
-                            "time": 0
-                        })
-                        
-                    except dns.exception.DNSException as e:
-                        results.append({
-                            "record_type": record_type,
-                            "status": "error",
-                            "error": str(e),
-                            "count": 0,
-                            "time": 0
-                        })
-                        
-                    # Update progress
-                    progress.update(task_id, advance=1)
+            # Perform lookups for each record type without progress spinner
+            for record_type in record_types:
+                try:
+                    start_time = time.time()
+                    answers = resolver.resolve(domain, record_type)
+                    lookup_time = time.time() - start_time
+                    
+                    results.append({
+                        "record_type": record_type,
+                        "status": "success",
+                        "count": len(answers),
+                        "time": lookup_time
+                    })
+                    
+                except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+                    results.append({
+                        "record_type": record_type,
+                        "status": "no_records",
+                        "count": 0,
+                        "time": 0
+                    })
+                    
+                except dns.exception.DNSException as e:
+                    results.append({
+                        "record_type": record_type,
+                        "status": "error",
+                        "error": str(e),
+                        "count": 0,
+                        "time": 0
+                    })
                     
             # Display results
             self._display_dns_test_results(dns_server, domain, results)

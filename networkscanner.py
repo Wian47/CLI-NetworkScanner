@@ -332,34 +332,28 @@ def dns_tools_menu():
     # Get domain name based on lookup type
     if dns_choice in ["1", "2", "3", "4"]:
         domain = Prompt.ask("[bold]📝 Enter domain name[/bold]")
-        console.print(f"[dim]Looking up records for {domain}...[/dim]")
     elif dns_choice == "5":
         domain = Prompt.ask("[bold]🔢 Enter IP address[/bold]")
-        console.print(f"[dim]Performing reverse lookup for {domain}...[/dim]")
     elif dns_choice == "6":
         domain = Prompt.ask("[bold]📝 Enter domain name to test[/bold]")
         dns_server = Prompt.ask("[bold]🖥️ Enter DNS server to test[/bold]", default="8.8.8.8")
-        console.print(f"[dim]Testing {dns_server} with {domain}...[/dim]")
     
     # Initialize DNS tools
     dns = DNSTools(console)
     
-    with console.status("[bold green]Performing DNS lookup...[/bold green]", spinner="dots"):
-        time.sleep(0.5)  # Short pause for visual effect
-        
-        # Perform requested lookup
-        if dns_choice == "1":
-            dns.lookup_a(domain)
-        elif dns_choice == "2":
-            dns.lookup_mx(domain)
-        elif dns_choice == "3":
-            dns.lookup_txt(domain)
-        elif dns_choice == "4":
-            dns.lookup_ns(domain)
-        elif dns_choice == "5":
-            dns.reverse_lookup(domain)
-        elif dns_choice == "6":
-            dns.test_dns_server(domain, dns_server)
+    # Perform requested lookup directly without the progress wrapper
+    if dns_choice == "1":
+        dns.lookup_a(domain)
+    elif dns_choice == "2":
+        dns.lookup_mx(domain)
+    elif dns_choice == "3":
+        dns.lookup_txt(domain)
+    elif dns_choice == "4":
+        dns.lookup_ns(domain)
+    elif dns_choice == "5":
+        dns.reverse_lookup(domain)
+    elif dns_choice == "6":
+        dns.test_dns_server(domain, dns_server)
     
     console.print("\n[bold cyan]━━━ DNS Lookup Complete ━━━[/bold cyan]", justify="center")
     input("\nPress Enter to return to main menu...")
@@ -649,9 +643,6 @@ def bandwidth_monitor_menu():
 
 def ssl_checker_menu():
     """SSL Certificate Checker menu."""
-    console = Console()
-    ssl_checker = SSLCertificateChecker(console)
-    
     console.print("[bold cyan]SSL/TLS Certificate Checker[/bold cyan]")
     console.print("Verify website certificates, check expiration dates, and validate certificate chains.\n")
     
@@ -671,6 +662,7 @@ def ssl_checker_menu():
     
     # Display progress
     with console.status(f"[bold green]Checking certificate for {hostname}:{port}...[/bold green]"):
+        ssl_checker = SSLCertificateChecker(console)
         ssl_checker.check_website(hostname, port)
     
     # Ask if user wants to save the result to a file
@@ -801,19 +793,27 @@ def process_cli_arguments(args):
     elif args.command == 'dns':
         dns = DNSTools(console)
         
+        # Parse domain properly to ensure it doesn't contain URLs
+        target = args.target
+        # Remove protocol and path if URL was provided
+        if '//' in target:
+            target = target.split('//', 1)[1]
+        # Remove any remaining path
+        target = target.split('/', 1)[0]
+        
         if args.type == 'a':
-            dns.lookup_a(args.target)
+            dns.lookup_a(target)
         elif args.type == 'mx':
-            dns.lookup_mx(args.target)
+            dns.lookup_mx(target)
         elif args.type == 'txt':
-            dns.lookup_txt(args.target)
+            dns.lookup_txt(target)
         elif args.type == 'ns':
-            dns.lookup_ns(args.target)
+            dns.lookup_ns(target)
         elif args.type == 'reverse':
-            dns.reverse_lookup(args.target)
+            dns.reverse_lookup(target)
         elif args.type == 'test':
             server = args.server or '8.8.8.8'
-            dns.test_dns_server(args.target, server)
+            dns.test_dns_server(target, server)
             
     # Network info
     elif args.command == 'netinfo':
@@ -851,7 +851,6 @@ def process_cli_arguments(args):
 
     # SSL Certificate Checker
     elif args.command == 'ssl':
-        console = Console()
         ssl_checker = SSLCertificateChecker(console)
         
         if args.batch:
