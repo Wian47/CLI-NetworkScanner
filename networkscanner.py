@@ -4,7 +4,7 @@ import sys
 import time
 from rich.console import Console
 from rich.panel import Panel
-from rich.prompt import Prompt, IntPrompt
+from rich.prompt import Prompt, IntPrompt, FloatPrompt
 from rich.table import Table
 from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn
 from rich import box
@@ -15,6 +15,7 @@ from modules.traceroute import Traceroute
 from modules.dns_tools import DNSTools
 from modules.network_info import NetworkInfo
 from modules.device_discovery import DeviceDiscovery
+from modules.bandwidth_monitor import BandwidthMonitor
 
 VERSION = "1.0.0"
 console = Console()
@@ -62,6 +63,7 @@ def main_menu():
             ("4", "🔖 DNS Tools", "Lookup and test DNS records"),
             ("5", "📊 Network Info", "View local and public network details"),
             ("6", "🔎 Device Discovery", "Find devices on your network"),
+            ("7", "📈 Bandwidth Monitor", "Track real-time network usage"),
             ("q", "🚪 Exit", "Quit the application")
         ]
         
@@ -78,7 +80,7 @@ def main_menu():
         
         choice = Prompt.ask(
             "\n[bold cyan]Enter your choice[/bold cyan]", 
-            choices=["1", "2", "3", "4", "5", "6", "q"], 
+            choices=["1", "2", "3", "4", "5", "6", "7", "q"], 
             default="q",
             show_choices=True,
             show_default=True
@@ -96,6 +98,8 @@ def main_menu():
             network_info_menu()
         elif choice == "6":
             device_discovery_menu()
+        elif choice == "7":
+            bandwidth_monitor_menu()
         elif choice == "q":
             console.print("\n[bold yellow]━━━ Thank you for using NetworkScan Pro ━━━[/bold yellow]", justify="center")
             sys.exit(0)
@@ -513,6 +517,132 @@ def device_discovery_menu():
     console.print("\n[bold cyan]━━━ Discovery Complete ━━━[/bold cyan]", justify="center")
     input("\nPress Enter to return to main menu...")
 
+def bandwidth_monitor_menu():
+    """Handle the bandwidth monitor menu options."""
+    console.print("\n[bold cyan]━━━ BANDWIDTH MONITOR ━━━[/bold cyan]", justify="center")
+    
+    # Create a visual explanation of bandwidth monitoring
+    monitor_info = Panel(
+        "[dim]Bandwidth monitor tracks and visualizes network usage in real-time:\n"
+        "• Current upload and download speeds\n"
+        "• Historical bandwidth usage graph\n"
+        "• Total data transferred statistics[/dim]",
+        title="[bold]About Bandwidth Monitor[/bold]",
+        border_style="blue",
+        padding=(1, 1)
+    )
+    console.print(monitor_info)
+    
+    # Interface selection
+    console.print("\n[bold]Select network interface:[/bold]")
+    
+    # Create bandwidth monitor instance and get interfaces
+    bandwidth = BandwidthMonitor(console)
+    interfaces = bandwidth._get_available_interfaces()
+    
+    # Create a table of available interfaces
+    interface_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
+    interface_table.add_column(style="cyan", justify="center", width=3)
+    interface_table.add_column(style="white")
+    interface_table.add_column(style="dim")
+    
+    # Add all interfaces option
+    interface_table.add_row("[1]", "All interfaces", "Monitor all network interfaces combined")
+    
+    # Add each available interface
+    option_num = 2
+    interface_options = ["all"]  # First option is "all interfaces"
+    
+    for name, details in interfaces.items():
+        interface_table.add_row(
+            f"[{option_num}]", 
+            f"{name}", 
+            f"IP: {details['ip']}"
+        )
+        interface_options.append(name)
+        option_num += 1
+        
+    console.print(interface_table)
+    
+    # Get user choice
+    choices = [str(i) for i in range(1, len(interface_options) + 1)]
+    interface_choice = Prompt.ask(
+        "[bold cyan]Choose interface[/bold cyan]", 
+        choices=choices, 
+        default="1"
+    )
+    
+    selected_interface = None
+    if interface_choice != "1":  # Not "All interfaces"
+        selected_interface = interface_options[int(interface_choice) - 1]
+        
+    console.print(f"[dim]Selected {'all interfaces' if not selected_interface else selected_interface}[/dim]")
+    
+    # Duration selection
+    console.print("\n[bold]Select monitoring duration:[/bold]")
+    
+    duration_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
+    duration_table.add_column(style="cyan", justify="center", width=3)
+    duration_table.add_column(style="white", no_wrap=True)
+    duration_table.add_column(style="dim")
+    
+    duration_options = [
+        ("1", "Continuous", "Monitor until manually stopped (Ctrl+C)"),
+        ("2", "1 minute", "Monitor for 60 seconds"),
+        ("3", "5 minutes", "Monitor for 300 seconds"),
+        ("4", "Custom", "Specify a custom duration in seconds")
+    ]
+    
+    for key, desc, help_text in duration_options:
+        duration_table.add_row(f"[{key}]", desc, help_text)
+        
+    console.print(duration_table)
+    
+    duration_choice = Prompt.ask(
+        "[bold cyan]Choose duration[/bold cyan]", 
+        choices=["1", "2", "3", "4"], 
+        default="1"
+    )
+    
+    duration = None  # None means continuous (until Ctrl+C)
+    
+    if duration_choice == "2":
+        duration = 60
+        console.print("[dim]Selected 1 minute monitoring[/dim]")
+    elif duration_choice == "3":
+        duration = 300
+        console.print("[dim]Selected 5 minutes monitoring[/dim]")
+    elif duration_choice == "4":
+        duration = IntPrompt.ask(
+            "[bold]Enter duration in seconds[/bold]", 
+            default=60
+        )
+        console.print(f"[dim]Selected {duration} seconds monitoring[/dim]")
+    else:
+        console.print("[dim]Selected continuous monitoring (press Ctrl+C to stop)[/dim]")
+    
+    # Update interval selection
+    update_interval = FloatPrompt.ask(
+        "[bold]Update interval in seconds[/bold] [dim](lower = more responsive but higher CPU usage)[/dim]", 
+        default=1.0
+    )
+    
+    console.print(f"[dim]Selected {update_interval} second update interval[/dim]")
+    
+    # Initialize and run bandwidth monitor
+    with console.status("[bold green]Initializing bandwidth monitor...[/bold green]", spinner="dots"):
+        time.sleep(0.5)  # Short pause for visual effect
+    
+    # Run the bandwidth monitor
+    bandwidth.monitor(
+        interface=selected_interface,
+        duration=duration,
+        update_interval=update_interval
+    )
+    
+    console.print("\n[bold cyan]━━━ Monitoring Complete ━━━[/bold cyan]", justify="center")
+    input("\nPress Enter to return to main menu...")
+
 def parse_arguments():
     """Parse command line arguments for direct CLI usage."""
     parser = argparse.ArgumentParser(description='NetworkScan Pro - Advanced CLI Network Utility')
@@ -555,6 +685,13 @@ def parse_arguments():
     discover_parser.add_argument('--threads', '-t', type=int, default=50, help='Number of threads to use')
     discover_parser.add_argument('--ping', '-p', action='store_true', help='Use ping instead of ARP')
     discover_parser.add_argument('--no-resolve', action='store_true', help='Disable hostname resolution')
+    
+    # Bandwidth monitor arguments
+    bandwidth_parser = subparsers.add_parser('bandwidth', help='Bandwidth monitor')
+    bandwidth_parser.add_argument('--interface', '-i', help='Network interface to monitor')
+    bandwidth_parser.add_argument('--duration', '-d', type=int, help='Monitoring duration in seconds')
+    bandwidth_parser.add_argument('--interval', '-n', type=float, default=1.0, 
+                                 help='Update interval in seconds')
     
     return parser.parse_args()
 
@@ -651,6 +788,15 @@ def process_cli_arguments(args):
             threads=args.threads,
             use_ping=args.ping,
             resolve_names=resolve_names
+        )
+        
+    # Bandwidth monitor
+    elif args.command == 'bandwidth':
+        monitor = BandwidthMonitor(console)
+        monitor.monitor(
+            interface=args.interface,
+            duration=args.duration,
+            update_interval=args.interval
         )
 
 if __name__ == "__main__":
