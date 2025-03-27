@@ -12,6 +12,7 @@ A feature-rich, visually appealing command-line network diagnostic tool with int
 - **DNS Tools**: A, MX, TXT, NS record lookup, reverse DNS, and DNS server testing
 - **Network Info**: Local IP configuration, public IP detection, and interface statistics
 - **Device Discovery**: Scan your local network to find all connected devices with IP/MAC addresses, hostnames, and vendor identification
+- **Bandwidth Monitor**: Track and visualize real-time network usage with graphs showing upload/download speeds
 
 ## Screenshots
 
@@ -107,6 +108,15 @@ python networkscanner.py discover --ping --no-resolve        # Use ping instead 
 python networkscanner.py discover --threads 100              # Use more threads for faster scanning
 ```
 
+#### Bandwidth Monitor
+
+```
+python networkscanner.py bandwidth                           # Monitor all interfaces until stopped
+python networkscanner.py bandwidth --interface "Wi-Fi"       # Monitor specific interface
+python networkscanner.py bandwidth --duration 300            # Monitor for 5 minutes
+python networkscanner.py bandwidth --interval 0.5            # More frequent updates (twice per second)
+```
+
 ## Advanced Usage
 
 ### Port Scanning Options
@@ -119,6 +129,14 @@ python networkscanner.py discover --threads 100              # Use more threads 
 - **ARP vs. Ping**: ARP scanning is faster and provides MAC addresses but requires admin privileges, while ping works on any system
 - **Hostname Resolution**: Enable/disable hostname lookups depending on speed requirements
 - **Network Range**: Automatically detects your network or allows custom CIDR notation networks
+
+### Bandwidth Monitoring Options
+
+- **Interface Selection**: Monitor all network interfaces or choose a specific one
+- **Real-time Visualization**: See bandwidth usage as it happens with ASCII graphs
+- **Duration Control**: Monitor for a specific time period or run continuously
+- **History Tracking**: View trends over the last minute of network activity
+- **Custom Intervals**: Adjust update frequency to balance between detail and system resource usage
 
 ## Troubleshooting
 
