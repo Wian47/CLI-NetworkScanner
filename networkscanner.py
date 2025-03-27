@@ -17,6 +17,7 @@ from modules.network_info import NetworkInfo
 from modules.device_discovery import DeviceDiscovery
 from modules.bandwidth_monitor import BandwidthMonitor
 from modules.ssl_checker import SSLCertificateChecker
+from modules.ip_geolocation import IPGeolocation
 
 VERSION = "1.0.0"
 console = Console()
@@ -66,6 +67,7 @@ def main_menu():
             ("6", "🔎 Device Discovery", "Find devices on your network"),
             ("7", "📈 Bandwidth Monitor", "Track real-time network usage"),
             ("8", "🔒 SSL Certificate Checker", "Verify SSL/TLS certificates"),
+            ("9", "🌍 IP Geolocation", "Map IP addresses to physical locations"),
             ("q", "🚪 Exit", "Quit the application")
         ]
         
@@ -82,7 +84,7 @@ def main_menu():
         
         choice = Prompt.ask(
             "\n[bold cyan]Enter your choice[/bold cyan]", 
-            choices=["1", "2", "3", "4", "5", "6", "7", "8", "q"], 
+            choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "q"], 
             default="q",
             show_choices=True,
             show_default=True
@@ -104,6 +106,8 @@ def main_menu():
             bandwidth_monitor_menu()
         elif choice == "8":
             ssl_checker_menu()
+        elif choice == "9":
+            ip_geolocation_menu()
         elif choice == "q":
             console.print("\n[bold yellow]━━━ Thank you for using NetworkScan Pro ━━━[/bold yellow]", justify="center")
             sys.exit(0)
@@ -677,6 +681,73 @@ def ssl_checker_menu():
     
     input("\nPress Enter to return to the main menu...")
 
+def ip_geolocation_menu():
+    """Handle the IP geolocation menu options."""
+    console.print("\n[bold cyan]━━━ IP GEOLOCATION ━━━[/bold cyan]", justify="center")
+    
+    # IP Geolocation explanation panel
+    geo_info = Panel(
+        "[dim]Map IP addresses to physical locations and visualize network paths.\n"
+        "Discover the geographical origin of IP addresses and trace routes across the globe.[/dim]",
+        title="[bold]About IP Geolocation[/bold]",
+        border_style="blue",
+        padding=(1, 1)
+    )
+    console.print(geo_info)
+    
+    # IP Geolocation sub-menu
+    geo_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
+    geo_table.add_column(style="cyan", justify="center", width=3)
+    geo_table.add_column(style="white", no_wrap=True)
+    geo_table.add_column(style="dim")
+    
+    geo_options = [
+        ("1", "🌐 Lookup IP Address", "Find location of a single IP address"),
+        ("2", "🌍 Trace Path with Geolocation", "Map a network path across the globe"),
+        ("3", "Return to main menu", "Go back to the main menu")
+    ]
+    
+    for key, desc, help_text in geo_options:
+        geo_table.add_row(f"[{key}]", desc, help_text)
+        
+    console.print(geo_table)
+    
+    geo_choice = Prompt.ask(
+        "[bold cyan]Choose option[/bold cyan]", 
+        choices=["1", "2", "3"], 
+        default="1"
+    )
+    
+    if geo_choice == "3":
+        return
+    
+    # Ask if user wants an HTML map output
+    html_output = Confirm.ask(
+        "[bold cyan]Generate interactive HTML map?[/bold cyan]", 
+        default=True
+    )
+    
+    output_file = None
+    if html_output:
+        output_file = Prompt.ask(
+            "[bold cyan]Enter output HTML file path[/bold cyan]",
+            default="geomap.html"
+        )
+    
+    # Initialize geolocation module
+    geolocation = IPGeolocation(console)
+    
+    if geo_choice == "1":
+        # IP lookup
+        target = Prompt.ask("[bold]📍 Enter IP address or hostname[/bold]")
+        geolocation.lookup_ip(target, output_file)
+    elif geo_choice == "2":
+        # Path tracing with geolocation
+        target = Prompt.ask("[bold]📍 Enter target IP address or hostname[/bold]")
+        geolocation.trace_path(target, output_file)
+    
+    input("\nPress Enter to return to main menu...")
+
 def parse_arguments():
     """Parse command line arguments for direct CLI usage."""
     parser = argparse.ArgumentParser(description='NetworkScan Pro - Advanced CLI Network Utility')
@@ -734,6 +805,13 @@ def parse_arguments():
     ssl_parser.add_argument('--save', help='Save results to specified file')
     ssl_parser.add_argument('--batch', help='Batch check certificates from file (one host[:port] per line)')
     ssl_parser.add_argument('--threads', type=int, default=10, help='Number of threads for batch checking (default: 10)')
+    
+    # IP Geolocation arguments
+    geo_parser = subparsers.add_parser('geoip', help='IP geolocation tools')
+    geo_parser.add_argument('target', help='Target IP address or hostname')
+    geo_parser.add_argument('--trace', '-t', action='store_true', 
+                           help='Trace path to target with geolocation')
+    geo_parser.add_argument('--output', '-o', help='Save interactive HTML map to specified file')
     
     return parser.parse_args()
 
@@ -912,6 +990,23 @@ def process_cli_arguments(args):
                     file_checker.check_website(args.hostname, args.port)
                     
                 console.print(f"[green]Results saved to {args.save}[/green]")
+
+    # IP Geolocation
+    elif args.command == 'geoip':
+        geolocation = IPGeolocation(console)
+        
+        if args.trace:
+            # Trace path with geolocation
+            geolocation.trace_path(args.target, args.output)
+        else:
+            # Single IP lookup
+            geolocation.lookup_ip(args.target, args.output)
+
+    else:
+        # Interactive mode
+        console.print("\n[bold cyan]Starting interactive mode...[/bold cyan]")
+        display_banner()
+        main_menu()
 
 if __name__ == "__main__":
     try:

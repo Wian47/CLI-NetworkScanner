@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+    
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_e22b2cc0647bba137c3689cc90fae9f3 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+        
+</head>
+<body>
+    
+    
+            <h3 align="center" style="font-size:16px"><b>Network Path to google.com</b></h3>
+        
+    
+            <div class="folium-map" id="map_e22b2cc0647bba137c3689cc90fae9f3" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_e22b2cc0647bba137c3689cc90fae9f3 = L.map(
+                "map_e22b2cc0647bba137c3689cc90fae9f3",
+                {
+                    center: [37.4225, -122.085],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 4,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_22337eebc04a71fa762d03dc7748fcc1 = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_22337eebc04a71fa762d03dc7748fcc1.addTo(map_e22b2cc0647bba137c3689cc90fae9f3);
+        
+    
+            var marker_2f116a23553ccf7558bbcebea2d4b597 = L.marker(
+                [-26.1363, 28.0704],
+                {
+}
+            ).addTo(map_e22b2cc0647bba137c3689cc90fae9f3);
+        
+    
+            var icon_ba118ada5ca8e43954be78b054712af3 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "home",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_8b1fb19251d6fb0f2d4fa1fda57a1013 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_bd43aa1832540538d75eacea1489758b = $(`<div id="html_bd43aa1832540538d75eacea1489758b" style="width: 100.0%; height: 100.0%;">             <h3>Hop 2 - 41.193.119.234</h3>             <b>Location:</b> Johannesburg, Gauteng, South Africa<br>             <b>ISP/Org:</b> Vox Telecom (Pty) Ltd<br>             <b>Latency:</b> 6 ms<br>             <b>Hostname:</b> 41-193-119-234.vox.co.za<br>             </div>`)[0];
+                popup_8b1fb19251d6fb0f2d4fa1fda57a1013.setContent(html_bd43aa1832540538d75eacea1489758b);
+            
+        
+
+        marker_2f116a23553ccf7558bbcebea2d4b597.bindPopup(popup_8b1fb19251d6fb0f2d4fa1fda57a1013)
+        ;
+
+        
+    
+    
+            marker_2f116a23553ccf7558bbcebea2d4b597.bindTooltip(
+                `<div>
+                     Source
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_2f116a23553ccf7558bbcebea2d4b597.setIcon(icon_ba118ada5ca8e43954be78b054712af3);
+            
+    
+            var marker_b4b93f64e449e1dac3de77a0057f0d50 = L.marker(
+                [-26.1363, 28.0704],
+                {
+}
+            ).addTo(map_e22b2cc0647bba137c3689cc90fae9f3);
+        
+    
+            var icon_81de3709a0659e312c1db0d03b99bf69 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "exchange",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_289c28db2c5daac99f5235c3410ae37d = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_31fb557f9cb46aade6f506f7ee114927 = $(`<div id="html_31fb557f9cb46aade6f506f7ee114927" style="width: 100.0%; height: 100.0%;">             <h3>Hop 6 - 41.193.118.131</h3>             <b>Location:</b> Johannesburg, Gauteng, South Africa<br>             <b>ISP/Org:</b> Vox Telecom (Pty) Ltd<br>             <b>Latency:</b> 46 ms<br>             <b>Hostname:</b> 41-193-118-131.vox.co.za<br>             </div>`)[0];
+                popup_289c28db2c5daac99f5235c3410ae37d.setContent(html_31fb557f9cb46aade6f506f7ee114927);
+            
+        
+
+        marker_b4b93f64e449e1dac3de77a0057f0d50.bindPopup(popup_289c28db2c5daac99f5235c3410ae37d)
+        ;
+
+        
+    
+    
+            marker_b4b93f64e449e1dac3de77a0057f0d50.bindTooltip(
+                `<div>
+                     Hop 6
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_b4b93f64e449e1dac3de77a0057f0d50.setIcon(icon_81de3709a0659e312c1db0d03b99bf69);
+            
+    
+            var marker_1b3999ce915db994e4d8abd59dd0ce84 = L.marker(
+                [-25.8776, 28.1682],
+                {
+}
+            ).addTo(map_e22b2cc0647bba137c3689cc90fae9f3);
+        
+    
+            var icon_dd52f3000671f252cc62a1798ddd2a2c = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "exchange",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_b7cd48f0667adcd8d81c316bdfe3391c = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_904ad972d03e936204c745c715257a3f = $(`<div id="html_904ad972d03e936204c745c715257a3f" style="width: 100.0%; height: 100.0%;">             <h3>Hop 7 - 41.193.2.78</h3>             <b>Location:</b> Centurion, Gauteng, South Africa<br>             <b>ISP/Org:</b> Vox Telecom (Pty) Ltd<br>             <b>Latency:</b> 7 ms<br>             <b>Hostname:</b> ns1.talenger.com<br>             </div>`)[0];
+                popup_b7cd48f0667adcd8d81c316bdfe3391c.setContent(html_904ad972d03e936204c745c715257a3f);
+            
+        
+
+        marker_1b3999ce915db994e4d8abd59dd0ce84.bindPopup(popup_b7cd48f0667adcd8d81c316bdfe3391c)
+        ;
+
+        
+    
+    
+            marker_1b3999ce915db994e4d8abd59dd0ce84.bindTooltip(
+                `<div>
+                     Hop 7
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_1b3999ce915db994e4d8abd59dd0ce84.setIcon(icon_dd52f3000671f252cc62a1798ddd2a2c);
+            
+    
+            var marker_74c66546e8c2e5813c7c93d04b6cd816 = L.marker(
+                [37.4225, -122.085],
+                {
+}
+            ).addTo(map_e22b2cc0647bba137c3689cc90fae9f3);
+        
+    
+            var icon_e3db63a6b0031fa28528baa008322b03 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "exchange",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_b30399a3567a91e86803538182dc1de6 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_124ca5fce39662fe2f589f95ee5f1227 = $(`<div id="html_124ca5fce39662fe2f589f95ee5f1227" style="width: 100.0%; height: 100.0%;">             <h3>Hop 8 - 192.178.97.57</h3>             <b>Location:</b> Mountain View, California, United States<br>             <b>ISP/Org:</b> Google LLC<br>             <b>Latency:</b> 7 ms<br>             <b>Hostname:</b> <br>             </div>`)[0];
+                popup_b30399a3567a91e86803538182dc1de6.setContent(html_124ca5fce39662fe2f589f95ee5f1227);
+            
+        
+
+        marker_74c66546e8c2e5813c7c93d04b6cd816.bindPopup(popup_b30399a3567a91e86803538182dc1de6)
+        ;
+
+        
+    
+    
+            marker_74c66546e8c2e5813c7c93d04b6cd816.bindTooltip(
+                `<div>
+                     Hop 8
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_74c66546e8c2e5813c7c93d04b6cd816.setIcon(icon_e3db63a6b0031fa28528baa008322b03);
+            
+    
+            var marker_f6b25f3e1aa8c29bcbff7149c7305395 = L.marker(
+                [37.4225, -122.085],
+                {
+}
+            ).addTo(map_e22b2cc0647bba137c3689cc90fae9f3);
+        
+    
+            var icon_7f8156c150e4a9b1f1015607c0b31f71 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "flag",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_0f6b81d9331e11dfba306a9239b33036 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_bc0e0ee55d6d1d9413a3ea280dcacc9d = $(`<div id="html_bc0e0ee55d6d1d9413a3ea280dcacc9d" style="width: 100.0%; height: 100.0%;">             <h3>Hop 9 - 192.178.73.131</h3>             <b>Location:</b> Mountain View, California, United States<br>             <b>ISP/Org:</b> Google LLC<br>             <b>Latency:</b> 7 ms<br>             <b>Hostname:</b> <br>             </div>`)[0];
+                popup_0f6b81d9331e11dfba306a9239b33036.setContent(html_bc0e0ee55d6d1d9413a3ea280dcacc9d);
+            
+        
+
+        marker_f6b25f3e1aa8c29bcbff7149c7305395.bindPopup(popup_0f6b81d9331e11dfba306a9239b33036)
+        ;
+
+        
+    
+    
+            marker_f6b25f3e1aa8c29bcbff7149c7305395.bindTooltip(
+                `<div>
+                     Destination: google.com
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_f6b25f3e1aa8c29bcbff7149c7305395.setIcon(icon_7f8156c150e4a9b1f1015607c0b31f71);
+            
+    
+            var poly_line_ac34628f013ca8e53ea2a15377835357 = L.polyline(
+                [[-26.1363, 28.0704], [-26.1363, 28.0704], [-25.8776, 28.1682], [37.4225, -122.085], [37.4225, -122.085]],
+                {"bubblingMouseEvents": true, "color": "red", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "red", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.7, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(map_e22b2cc0647bba137c3689cc90fae9f3);
+        
+    
+            poly_line_ac34628f013ca8e53ea2a15377835357.bindTooltip(
+                `<div>
+                     Network Path
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+</script>
+</html>

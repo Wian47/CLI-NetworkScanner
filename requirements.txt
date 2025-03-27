@@ -7,4 +7,5 @@ argparse>=1.4.0
 pytest>=6.2.5
 psutil>=5.9.0
 pyOpenSSL>=22.0.0
-ipaddress>=1.0.23 
+ipaddress>=1.0.23
+folium>=0.14.0 
