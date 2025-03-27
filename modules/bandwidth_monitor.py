@@ -179,6 +179,82 @@ class BandwidthMonitor:
             # Sleep for the interval
             time.sleep(self.interval)
     
+    def _create_bandwidth_graph(self, 
+                              download_data: List[float], 
+                              upload_data: List[float],
+                              time_data: List[float],
+                              max_value: float) -> str:
+        """
+        Create a text-based bandwidth graph.
+        
+        Args:
+            download_data: List of download rates
+            upload_data: List of upload rates
+            time_data: List of time points
+            max_value: Maximum value for scaling
+            
+        Returns:
+            String representing the ASCII graph
+        """
+        # Constants for graph display
+        graph_width = min(len(download_data), self.max_history)
+        graph_height = self.max_graph_height
+        
+        # Characters for the graph - using simple ASCII that works in any terminal
+        download_char = "#"  # Download symbol - hash character
+        upload_char = "@"    # Upload symbol - at character
+        axis_char = "|"      # Y-axis
+        baseline_char = "-"  # X-axis
+        empty_char = " "     # Empty space
+        
+        # Create the graph lines
+        lines = []
+        
+        # Add a header with max speed
+        max_speed_fmt = self._format_bytes(max_value)
+        lines.append(f"Max: {max_speed_fmt}")
+        
+        # Generate each line of the graph from top to bottom
+        for y in range(graph_height, 0, -1):
+            line = axis_char
+            threshold = (y / graph_height) * max_value
+            
+            for x in range(min(graph_width, len(download_data))):
+                # Index from the end to show most recent data
+                idx = len(download_data) - graph_width + x if len(download_data) > graph_width else x
+                
+                download_val = download_data[idx]
+                upload_val = upload_data[idx]
+                
+                # Determine character at this position
+                if download_val >= threshold and upload_val >= threshold:
+                    # Both download and upload at this level - use a different character
+                    line += "*"
+                elif download_val >= threshold:
+                    line += download_char
+                elif upload_val >= threshold:
+                    line += upload_char
+                else:
+                    line += empty_char
+                    
+            lines.append(line)
+            
+        # Add the x-axis baseline
+        baseline = f"{axis_char}{baseline_char * graph_width}"
+        lines.append(baseline)
+        
+        # Add a time axis label (most recent time point)
+        if time_data:
+            seconds_label = f"Last {int(time_data[-1] - time_data[0])} seconds" if len(time_data) > 1 else "Starting..."
+            time_axis = f"0{empty_char * (graph_width - len(seconds_label) - 1)}{seconds_label}"
+            lines.append(time_axis)
+            
+        # Add a legend
+        legend = f"# Download  @ Upload  * Both"
+        lines.append(legend)
+        
+        return "\n".join(lines)
+    
     def _get_monitoring_display(self, interface: Optional[str] = None) -> Layout:
         """
         Create a rich layout for displaying bandwidth monitoring.
@@ -261,13 +337,13 @@ class BandwidthMonitor:
             if interface:
                 graph_title += f" - Interface: {interface}"
                 
-            # Generate the graph
-            graph_lines = self._create_bandwidth_graph(
+            # Generate the ASCII graph
+            graph_text = self._create_bandwidth_graph(
                 download_data, upload_data, time_data, max_value
             )
             
             graph_panel = Panel(
-                Text('\n'.join(graph_lines)),
+                graph_text,
                 title=graph_title,
                 border_style="blue",
                 padding=(1, 2)
@@ -287,78 +363,6 @@ class BandwidthMonitor:
         layout["graph"].update(graph_panel)
         
         return layout
-    
-    def _create_bandwidth_graph(self, 
-                              download_data: List[float], 
-                              upload_data: List[float],
-                              time_data: List[float],
-                              max_value: float) -> List[str]:
-        """
-        Create a text-based bandwidth graph.
-        
-        Args:
-            download_data: List of download rates
-            upload_data: List of upload rates
-            time_data: List of time points
-            max_value: Maximum value for scaling
-            
-        Returns:
-            List of strings representing the graph
-        """
-        # Constants for graph display
-        graph_width = min(len(download_data), self.max_history)
-        graph_height = self.max_graph_height
-        
-        # Characters for the graph
-        download_char = "▓"  # Download bars
-        upload_char = "▒"    # Upload bars (lighter shade)
-        axis_char = "│"      # Y-axis
-        baseline_char = "─"  # X-axis
-        
-        # Create the graph with proper scaling
-        graph_lines = []
-        
-        # Add a header with max speed
-        max_speed_fmt = self._format_bytes(max_value)
-        graph_lines.append(f"Max: {max_speed_fmt} {' ' * (graph_width - len(max_speed_fmt) - 5)}")
-        
-        # Generate each line of the graph from top to bottom
-        for y in range(graph_height, 0, -1):
-            line = [axis_char]
-            threshold = (y / graph_height) * max_value
-            
-            for x in range(min(graph_width, len(download_data))):
-                # Index from the end to show most recent data
-                idx = len(download_data) - graph_width + x if len(download_data) > graph_width else x
-                
-                download_val = download_data[idx]
-                upload_val = upload_data[idx]
-                
-                # Determine character at this position
-                if download_val >= threshold:
-                    line.append(f"[green]{download_char}[/green]")
-                elif upload_val >= threshold:
-                    line.append(f"[red]{upload_char}[/red]")
-                else:
-                    line.append(" ")
-                    
-            graph_lines.append("".join(line))
-            
-        # Add the x-axis baseline
-        baseline = f"{axis_char}{baseline_char * graph_width}"
-        graph_lines.append(baseline)
-        
-        # Add a time axis label (most recent time point)
-        if time_data:
-            seconds_label = f"Last {int(time_data[-1] - time_data[0])} seconds" if len(time_data) > 1 else "Starting..."
-            time_axis = f"0{' ' * (graph_width - len(seconds_label) - 1)}{seconds_label}"
-            graph_lines.append(time_axis)
-            
-        # Add a legend
-        legend = f"[green]{download_char}[/green] Download  [red]{upload_char}[/red] Upload"
-        graph_lines.append(legend)
-        
-        return graph_lines
     
     def monitor(self, interface: Optional[str] = None, duration: Optional[int] = None, 
                 update_interval: float = 1.0):
