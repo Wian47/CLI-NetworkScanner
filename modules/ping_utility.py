@@ -44,14 +44,22 @@ class PingUtility:
         # Find number of packets sent/received
         if platform_name == "Windows":
             # Find sent packets
-            sent_match = re.search(r"Sent = (\d+)", output)
+            sent_match = re.search(r"Sent = (\d+)", output, re.IGNORECASE)
             if sent_match:
                 result["sent"] = int(sent_match.group(1))
+            else:
+                # If we can't find the summary, but there's a ping, assume 1 sent
+                if "Reply from" in output:
+                    result["sent"] = 1
                 
             # Find received packets
-            received_match = re.search(r"Received = (\d+)", output)
+            received_match = re.search(r"Received = (\d+)", output, re.IGNORECASE)
             if received_match:
                 result["received"] = int(received_match.group(1))
+            else:
+                # If we can't find the summary, but there's a reply, assume 1 received
+                if "Reply from" in output:
+                    result["received"] = 1
                 
             # Calculate packet loss
             if result["sent"] > 0:
@@ -63,6 +71,10 @@ class PingUtility:
                 result["min_time"] = float(times_match.group(1))
                 result["max_time"] = float(times_match.group(2))
                 result["avg_time"] = float(times_match.group(3))
+                
+            # Extract individual time from Windows format
+            time_matches = re.finditer(r"time[=<](\d+\.?\d*) ?ms", output, re.IGNORECASE)
+            result["times"] = [float(match.group(1)) for match in time_matches]
                 
         else:  # Linux/Mac
             # Find sent/received/loss
@@ -79,13 +91,19 @@ class PingUtility:
                 result["avg_time"] = float(times_match.group(2))
                 result["max_time"] = float(times_match.group(3))
                 
-        # Extract individual times
-        time_matches = re.finditer(r"time=(\d+\.?\d*) ?ms", output)
-        result["times"] = [float(match.group(1)) for match in time_matches]
+            # Extract individual times
+            time_matches = re.finditer(r"time=(\d+\.?\d*) ?ms", output)
+            result["times"] = [float(match.group(1)) for match in time_matches]
         
         # Set status
         if result["received"] > 0:
             result["status"] = "success"
+            
+        # Update min/max/avg if we have times but they weren't explicitly in the output
+        if result["times"] and result["min_time"] == 0.0:
+            result["min_time"] = min(result["times"])
+            result["max_time"] = max(result["times"])
+            result["avg_time"] = sum(result["times"]) / len(result["times"])
         
         return result
 
@@ -103,14 +121,32 @@ class PingUtility:
         
         try:
             if platform_name == "Windows":
-                # On Windows, use /n 1 for one ping
+                # On Windows, use ping with PowerShell to ensure we get the output in a consistent format
                 cmd = ["powershell", "-Command", f"ping -n 1 {target}"]
+                
+                # Use enhanced pattern to capture time in Windows output
+                time_pattern = r"time[=<](\d+\.?\d*) ?ms"
             else:
                 # On Linux/Mac, use -c 1 for one ping
                 cmd = ["ping", "-c", "1", target]
+                time_pattern = r"time=(\d+\.?\d*) ?ms"
                 
             output = subprocess.check_output(cmd, text=True)
+            
+            # Directly extract time from output for more reliability
+            time_match = re.search(time_pattern, output, re.IGNORECASE)
+            response_time = float(time_match.group(1)) if time_match else None
+            
+            # Parse the rest of the output
             result = self._parse_ping_output(output, platform_name)
+            
+            # If we extracted a time directly but it's not in the parsed results, add it
+            if response_time is not None and not result["times"]:
+                result["times"] = [response_time]
+                if result["received"] == 0:
+                    result["received"] = 1
+                    result["status"] = "success"
+                    
             return result
             
         except subprocess.CalledProcessError:
@@ -226,10 +262,7 @@ class PingUtility:
         )
         
         # Combine table and instructions
-        display = Align.center(
-            live_table, 
-            vertical="top"
-        )
+        display = Align.center(live_table, vertical="top")
         
         # Start live display
         with Live(display, refresh_per_second=4, console=self.console) as live:
@@ -250,7 +283,12 @@ class PingUtility:
                     min_time = min(times) if times else 0.0
                     avg_time = sum(times) / len(times) if times else 0.0
                     max_time = max(times) if times else 0.0
-                    last_time = result["times"][0] if result["times"] else "Timeout"
+                    
+                    # Handle the last time display properly
+                    if result["times"]:
+                        last_time = f"{result['times'][0]:.2f}"
+                    else:
+                        last_time = "Timeout"
                     
                     # Update table
                     live_table.rows = []
@@ -264,9 +302,12 @@ class PingUtility:
                         f"{max_time:.2f}" if times else "N/A"
                     )
                     
-                    # Update display
-                    display = Align.center(live_table)
+                    # Ensure we update the display with the table
+                    display = Align.center(live_table, vertical="top")
                     live.update(display)
+                    
+                    # Explicitly flush the console output to ensure updates are visible
+                    self.console.file.flush()
                     
                     # Wait a second before next ping
                     time.sleep(1)
