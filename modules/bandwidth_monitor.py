@@ -215,7 +215,6 @@ class BandwidthMonitor:
         stats_table = Table(
             title="Bandwidth Statistics",
             box=box.ROUNDED,
-            title_style="bold cyan",
             border_style="blue",
             header_style="bold cyan",
             padding=(0, 1)
@@ -270,7 +269,6 @@ class BandwidthMonitor:
             graph_panel = Panel(
                 Text('\n'.join(graph_lines)),
                 title=graph_title,
-                title_style="bold cyan",
                 border_style="blue",
                 padding=(1, 2)
             )
@@ -279,7 +277,6 @@ class BandwidthMonitor:
             graph_panel = Panel(
                 "[dim]Collecting data for graph visualization...[/dim]",
                 title="Bandwidth Usage Over Time",
-                title_style="bold cyan",
                 border_style="blue",
                 padding=(1, 2)
             )
@@ -456,7 +453,6 @@ class BandwidthMonitor:
         summary_table = Table(
             title=f"Bandwidth Monitoring Summary - {interface_name}",
             box=box.ROUNDED,
-            title_style="bold cyan",
             border_style="blue",
             padding=(0, 1)
         )
