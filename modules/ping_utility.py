@@ -247,148 +247,200 @@ class PingUtility:
         total_sent = 0
         total_received = 0
         times = []
-        
-        # Show title and instructions
-        self.console.print(Panel(
-            "[bold yellow]Press Ctrl+C to stop the continuous ping[/bold yellow]",
-            border_style="yellow", 
-            padding=(1, 2)
-        ))
-        
-        # Keep track of consecutive timeouts for visual indication
         consecutive_timeouts = 0
         
-        try:
-            while not self.stop_continuous:
-                # Perform a single ping
-                start_time = time.time()
-                result = self.ping_once(target)
-                ping_time = time.time() - start_time
+        # Create a Live display context for updating in place
+        from rich.live import Live
+        from rich.layout import Layout
+        
+        # Create the layout for our display
+        layout = Layout()
+        layout.split(
+            Layout(name="header", size=3),
+            Layout(name="stats"),
+            Layout(name="history", size=7)
+        )
+        
+        # Function to generate the display
+        def get_display():
+            # Header with instructions
+            status_indicator = ""
+            if consecutive_timeouts >= 3:
+                status_indicator = " [bold red]⚠ Connection issues![/bold red]"
                 
-                # Update totals
-                total_sent += 1
-                if result["status"] == "success":
-                    total_received += 1
-                    consecutive_timeouts = 0
+            header = Panel(
+                f"[bold yellow]Press Ctrl+C to stop the continuous ping[/bold yellow]{status_indicator}",
+                border_style="yellow",
+                padding=(1, 2)
+            )
+            
+            # Statistics table
+            table = Table(
+                title=f"Continuous Ping to {target}",
+                box=box.ROUNDED,
+                title_style="bold cyan",
+                border_style="blue",
+                header_style="bold cyan"
+            )
+            
+            # Add columns
+            table.add_column("Packets Sent", style="cyan", justify="right")
+            table.add_column("Packets Received", style="green", justify="right")
+            table.add_column("Packet Loss", style="yellow", justify="right")
+            table.add_column("Last RTT", style="magenta", justify="right")
+            table.add_column("Min RTT", style="blue", justify="right")
+            table.add_column("Avg RTT", style="blue", justify="right")
+            table.add_column("Max RTT", style="blue", justify="right")
+            
+            # Format statistics
+            min_str = f"{min(times):.2f} ms" if times else "N/A"
+            avg_str = f"{sum(times) / len(times):.2f} ms" if times else "N/A"
+            max_str = f"{max(times):.2f} ms" if times else "N/A"
+            
+            # Last RTT value and color
+            if times and total_sent > 0:
+                last_time = times[-1]
+                last_rtt = f"{last_time:.2f} ms"
+                last_rtt_color = "green"
+                if last_time > 100:
+                    last_rtt_color = "red"
+                elif last_time > 50:
+                    last_rtt_color = "yellow"
+                last_rtt_display = f"[{last_rtt_color}]{last_rtt}[/{last_rtt_color}]"
+            else:
+                last_rtt_display = "[red]Timeout[/red]"
+            
+            # Calculate packet loss
+            loss_percent = 0.0 if total_sent == 0 else 100.0 - (total_received / total_sent * 100.0)
+            
+            # Add statistics row
+            table.add_row(
+                str(total_sent),
+                str(total_received),
+                f"{loss_percent:.1f}%",
+                last_rtt_display,
+                min_str,
+                avg_str,
+                max_str
+            )
+            
+            # History visualization
+            if times:
+                # Display caption with ping number and timestamp
+                history_caption = f"Ping #{total_sent} | Last updated: {time.strftime('%H:%M:%S')}"
+                
+                # Create history panel
+                history_length = min(30, len(times))
+                recent_times = times[-history_length:]
+                
+                # Generate bars for visualization
+                # Calculate appropriate scale for visualizing ping times
+                max_recent = max(max(recent_times), 100)  # At least 100ms for scale
+                
+                # Generate visualization using Unicode block characters for smoother gradient
+                bars = []
+                
+                # Block characters for better visualization (full to empty)
+                blocks = ["█", "▇", "▆", "▅", "▄", "▃", "▂", "▁"]
+                
+                for t in recent_times:
+                    # Determine color based on response time
+                    bar_color = "green"
+                    if t > 100:
+                        bar_color = "red"
+                    elif t > 50:
+                        bar_color = "yellow"
                     
-                    # Update times list
-                    if result["times"]:
-                        times.append(result["times"][0])
-                else:
-                    consecutive_timeouts += 1
+                    # Calculate bar height (0-7 index for blocks array)
+                    # Scale based on max_recent with a minimum scale of 100ms
+                    ratio = t / max_recent
+                    height_idx = min(7, int(ratio * 8))
+                    
+                    # Create bar character
+                    bar_char = blocks[7 - height_idx]  # Invert index for correct height
+                    bars.append(f"[{bar_color}]{bar_char}[/{bar_color}]")
                 
-                # Calculate statistics
-                loss_percent = 0.0 if total_sent == 0 else 100.0 - (total_received / total_sent * 100.0)
-                min_time = min(times) if times else 0.0
-                avg_time = sum(times) / len(times) if times else 0.0
-                max_time = max(times) if times else 0.0
-                
-                # Get the RTT for this ping
-                if result["times"]:
-                    last_rtt = f"{result['times'][0]:.2f} ms"
-                    last_rtt_color = "green"
-                    if result["times"][0] > 100:
-                        last_rtt_color = "red"
-                    elif result["times"][0] > 50:
-                        last_rtt_color = "yellow"
-                    last_rtt_display = f"[{last_rtt_color}]{last_rtt}[/{last_rtt_color}]"
-                else:
-                    last_rtt_display = "[red]Timeout[/red]"
-                
-                # Build a responsive table with better styling
-                table = Table(
-                    title=f"Continuous Ping to {target}",
-                    box=box.ROUNDED,
-                    title_style="bold cyan",
+                # Create the visualization panel
+                history = Panel(
+                    " ".join(bars),
+                    title="Response Time History [dim](recent pings, right = newest)[/dim]",
                     border_style="blue",
-                    header_style="bold cyan",
-                    caption=f"Ping #{total_sent} | Last updated: {time.strftime('%H:%M:%S')}",
-                    caption_style="dim"
+                    padding=(1, 2)
                 )
-                
-                # Add columns with better styling
-                table.add_column("Packets Sent", style="cyan", justify="right")
-                table.add_column("Packets Received", style="green", justify="right")
-                table.add_column("Packet Loss", style="yellow", justify="right")
-                table.add_column("Last RTT", style="magenta", justify="right")
-                table.add_column("Min RTT", style="blue", justify="right")
-                table.add_column("Avg RTT", style="blue", justify="right")
-                table.add_column("Max RTT", style="blue", justify="right")
-                
-                # Format statistics with better styling
-                min_str = f"{min_time:.2f} ms" if times else "N/A"
-                avg_str = f"{avg_time:.2f} ms" if times else "N/A"
-                max_str = f"{max_time:.2f} ms" if times else "N/A"
-                
-                # Add status indicator for consecutive timeouts
-                status_indicator = ""
-                if consecutive_timeouts >= 3:
-                    status_indicator = " [bold red]⚠ Connection issues![/bold red]"
-                
-                # Add row with current statistics
-                table.add_row(
-                    str(total_sent),
-                    str(total_received),
-                    f"{loss_percent:.1f}%",
-                    last_rtt_display,
-                    min_str,
-                    avg_str,
-                    max_str
+            else:
+                # No data yet
+                history = Panel(
+                    "[dim]Waiting for ping data...[/dim]",
+                    title="Response Time History",
+                    border_style="blue",
+                    padding=(1, 2)
                 )
-                
-                # Create a history graph of recent pings (simplified visualization)
-                history_length = min(20, len(times))
-                if history_length > 0:
-                    recent_times = times[-history_length:]
-                    max_recent = max(recent_times)
+            
+            # Update the layout sections
+            layout["header"].update(header)
+            layout["stats"].update(table)
+            layout["history"].update(history)
+            
+            return layout
+        
+        # Start Live display
+        with Live(get_display(), refresh_per_second=4) as live:
+            try:
+                while not self.stop_continuous:
+                    # Perform a single ping
+                    start_time = time.time()
+                    result = self.ping_once(target)
+                    ping_time = time.time() - start_time
                     
-                    # Create a simplified graph
-                    graph_bars = []
-                    for t in recent_times:
-                        # Normalize and get color
-                        ratio = t / max(100, max_recent)  # Cap at 100ms for scaling
-                        bar_color = "green"
-                        if t > 100:
-                            bar_color = "red"
-                        elif t > 50:
-                            bar_color = "yellow"
+                    # Update totals
+                    total_sent += 1
+                    if result["status"] == "success":
+                        total_received += 1
+                        consecutive_timeouts = 0
                         
-                        # Create bar of appropriate size (max 10 characters)
-                        bar_size = min(10, max(1, int(ratio * 10)))
-                        graph_bars.append(f"[{bar_color}]{'█' * bar_size}[/{bar_color}]")
+                        # Update times list
+                        if result["times"]:
+                            times.append(result["times"][0])
+                    else:
+                        consecutive_timeouts += 1
                     
-                    # Add the graph to a panel
-                    graph_panel = Panel(
-                        " ".join(graph_bars),
-                        title="[bold]Response Time History[/bold] [dim](recent pings, right = newest)[/dim]",
-                        border_style="blue"
+                    # Update the display
+                    live.update(get_display())
+                    
+                    # Wait before next ping (slightly less than 1 second since ping takes time)
+                    time.sleep(0.8)
+                    
+            except KeyboardInterrupt:
+                self.stop_continuous = True
+                # Exit the Live display cleanly
+                live.stop()
+                self.console.print("\n[bold yellow]Continuous ping stopped by user.[/bold yellow]")
+                
+                # Display summary statistics
+                if times:
+                    # Show a summary of the ping session
+                    summary = Table(
+                        title=f"Ping Summary for {target}",
+                        box=box.ROUNDED,
+                        border_style="cyan"
                     )
+                    summary.add_column("Metric", style="cyan", justify="right")
+                    summary.add_column("Value", style="green", justify="right")
                     
-                    # Clear the console and print everything
-                    self.console.clear()
-                    self.console.print(Panel(
-                        f"[bold yellow]Press Ctrl+C to stop the continuous ping[/bold yellow]{status_indicator}",
-                        border_style="yellow", 
-                        padding=(1, 2)
-                    ))
-                    self.console.print(table)
-                    self.console.print(graph_panel)
-                else:
-                    # Clear the console and print just the table if no history yet
-                    self.console.clear()
-                    self.console.print(Panel(
-                        f"[bold yellow]Press Ctrl+C to stop the continuous ping[/bold yellow]{status_indicator}",
-                        border_style="yellow", 
-                        padding=(1, 2)
-                    ))
-                    self.console.print(table)
-                
-                # Wait before next ping
-                time.sleep(1)
-                
-        except KeyboardInterrupt:
-            self.stop_continuous = True
-            self.console.print("\n[yellow]Continuous ping stopped by user.[/yellow]")
+                    # Add statistics
+                    loss_percent = 0.0 if total_sent == 0 else 100.0 - (total_received / total_sent * 100.0)
+                    min_time = min(times) if times else 0.0
+                    avg_time = sum(times) / len(times) if times else 0.0
+                    max_time = max(times) if times else 0.0
+                    
+                    summary.add_row("Packets Sent", str(total_sent))
+                    summary.add_row("Packets Received", str(total_received))
+                    summary.add_row("Packet Loss", f"{loss_percent:.1f}%")
+                    summary.add_row("Minimum RTT", f"{min_time:.2f} ms")
+                    summary.add_row("Average RTT", f"{avg_time:.2f} ms")
+                    summary.add_row("Maximum RTT", f"{max_time:.2f} ms")
+                    
+                    self.console.print(summary)
                 
     def _display_results(self, target: str, result: Dict[str, Union[str, float, int]]):
         """
