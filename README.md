@@ -14,6 +14,7 @@ A feature-rich, visually appealing command-line network diagnostic tool with int
 - **Device Discovery**: Scan your local network to find all connected devices with IP/MAC addresses, hostnames, and vendor identification
 - **Bandwidth Monitor**: Track and visualize real-time network usage with graphs showing upload/download speeds
 - **SSL Certificate Checker**: Verify website certificates, check expiration dates, and validate certificate chains
+- **IP Geolocation**: Map IP addresses to physical locations with interactive HTML maps and visualize network paths across the globe
 
 ## Screenshots
 
@@ -127,6 +128,16 @@ python networkscanner.py ssl example.com --save report.txt   # Save results to f
 python networkscanner.py ssl --batch sites.txt --threads 5   # Batch check certificates for sites in file
 ```
 
+#### IP Geolocation
+
+```
+python networkscanner.py geoip 8.8.8.8                       # Look up geolocation for an IP address
+python networkscanner.py geoip google.com                    # Look up geolocation for a hostname
+python networkscanner.py geoip 1.1.1.1 --trace               # Trace network path with geolocation
+python networkscanner.py geoip example.com --output map.html # Generate interactive HTML map
+python networkscanner.py geoip 8.8.8.8 --output map.html --open # Generate and open map in browser
+```
+
 ## Advanced Usage
 
 ### Port Scanning Options
@@ -156,6 +167,14 @@ python networkscanner.py ssl --batch sites.txt --threads 5   # Batch check certi
 - **Security Assessment**: Detect weak algorithms, small key sizes, and outdated protocols
 - **Batch Processing**: Check multiple certificates in parallel with customizable thread count
 
+### IP Geolocation Options
+
+- **Single IP Lookup**: Look up details about any IP address or hostname
+- **Path Tracing**: Visualize the network path to a target with geolocation data for each hop
+- **Interactive Maps**: Generate interactive HTML maps with detailed location information
+- **Browser Integration**: Automatically open generated maps in your default web browser
+- **Caching System**: Local caching of IP lookup results to reduce API calls and improve performance
+
 ## Troubleshooting
 
 - **Permission Issues**: Some features require administrative/root privileges. Run as admin/sudo for full functionality.
@@ -163,6 +182,7 @@ python networkscanner.py ssl --batch sites.txt --threads 5   # Batch check certi
 - **Port Scan Accuracy**: If port scan results show many "filtered" ports, try increasing timeout values or using advanced scanning.
 - **Network Range Detection**: If automatic network detection fails, specify your network manually using CIDR notation.
 - **SSL Certificate Issues**: If certificate validation fails, check for clock synchronization issues or network restrictions.
+- **Geolocation API Limits**: The IP geolocation feature uses a free API with rate limiting. If you encounter errors, wait a few minutes before trying again.
 
 ## Technical Details
 
@@ -173,6 +193,7 @@ NetworkScan Pro is built using:
 - **Pythonping**: For accurate latency measurements
 - **Scapy**: For advanced packet crafting capabilities
 - **DNSPython**: For comprehensive DNS operations
+- **Folium**: For generating interactive maps of IP locations and network paths
 
 ## License
 
