@@ -153,7 +153,27 @@ def port_scanner_menu():
     
     # Initialize and run port scanner
     scanner = PortScanner(console)
-    scanner.scan(target, ports, num_threads=thread_count)
+    
+    # Check for advanced scanning capabilities (using SYN scan)
+    try:
+        # Only use advanced if we're running as admin/root
+        import os
+        advanced = False
+        if os.name == 'nt':  # Windows
+            try:
+                import ctypes
+                advanced = ctypes.windll.shell32.IsUserAnAdmin() != 0
+            except:
+                advanced = False
+        else:  # Unix-like
+            advanced = os.geteuid() == 0
+            
+        if advanced:
+            console.print("[green]Using advanced scanning techniques (SYN scan)[/green]")
+    except:
+        advanced = False
+        
+    scanner.scan(target, ports, threads=thread_count, advanced=advanced)
     
     console.print("\n[bold cyan]━━━ Scan Complete ━━━[/bold cyan]", justify="center")
     input("\nPress Enter to return to main menu...")
@@ -450,8 +470,24 @@ def process_cli_arguments(args):
                 ports = list(map(int, args.ports.split(',')))
         else:
             ports = [80, 443]  # Default ports
+        
+        # Check for advanced scanning capabilities (using SYN scan)
+        try:
+            # Only use advanced if we're running as admin/root
+            import os
+            advanced = False
+            if os.name == 'nt':  # Windows
+                try:
+                    import ctypes
+                    advanced = ctypes.windll.shell32.IsUserAnAdmin() != 0
+                except:
+                    advanced = False
+            else:  # Unix-like
+                advanced = os.geteuid() == 0
+        except:
+            advanced = False
             
-        scanner.scan(args.target, ports)
+        scanner.scan(args.target, ports, threads=100, advanced=advanced)
         
     # Ping utility
     elif args.command == 'ping':
