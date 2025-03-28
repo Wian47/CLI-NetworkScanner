@@ -140,17 +140,12 @@ class NetworkInfo:
         """Display local IP configuration information."""
         self.console.print("[bold]Retrieving local IP configuration...[/bold]")
         
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[bold blue]Gathering network information..."),
-            console=self.console
-        ) as progress:
-            # Create task for progress tracking
-            task_id = progress.add_task("Gathering...")
-            
-            # Get local IP information
-            ip_info = self.get_local_ip()
-            
+        # Get local IP information - do this directly instead of in a live progress display
+        ip_info = self.get_local_ip()
+        
+        # Now show a simple message that we're done
+        self.console.print("[bold green]✓[/bold green] Network information retrieved successfully")
+        
         # Display hostname and primary IP
         self.console.print(Panel(
             f"[bold cyan]Hostname:[/bold cyan] [yellow]{ip_info['hostname']}[/yellow]\n"
@@ -180,17 +175,12 @@ class NetworkInfo:
         """Display public IP information."""
         self.console.print("[bold]Retrieving public IP information...[/bold]")
         
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[bold blue]Contacting external services..."),
-            console=self.console
-        ) as progress:
-            # Create task for progress tracking
-            task_id = progress.add_task("Retrieving...")
-            
-            # Get public IP information
-            ip_info = self.get_public_ip()
-            
+        # Get public IP information directly
+        ip_info = self.get_public_ip()
+        
+        # Simple completion message
+        self.console.print("[bold green]✓[/bold green] Public IP information retrieved")
+        
         if ip_info["public_ip"]:
             # Display public IP information
             self.console.print(Panel(
@@ -208,17 +198,12 @@ class NetworkInfo:
         """Display network interface statistics."""
         self.console.print("[bold]Retrieving interface statistics...[/bold]")
         
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[bold blue]Gathering interface statistics..."),
-            console=self.console
-        ) as progress:
-            # Create task for progress tracking
-            task_id = progress.add_task("Gathering...")
-            
-            # Get interface statistics
-            stats = self.get_interface_stats()
-            
+        # Get interface statistics directly
+        stats = self.get_interface_stats()
+        
+        # Simple completion message
+        self.console.print("[bold green]✓[/bold green] Interface statistics retrieved")
+        
         if stats:
             # Display interface statistics
             table = Table(title="Network Interface Statistics")
