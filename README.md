@@ -2,8 +2,6 @@
 
 A feature-rich, visually appealing command-line network diagnostic tool with interactive menus, progress visualization, and comprehensive scanning capabilities.
 
-![NetworkScan Pro Banner](https://via.placeholder.com/800x200/0073e6/ffffff?text=NetworkScan+Pro)
-
 ## Features
 
 - **Port Scanner**: Scan single IPs or ranges with service detection and response time measurement
@@ -15,14 +13,7 @@ A feature-rich, visually appealing command-line network diagnostic tool with int
 - **Bandwidth Monitor**: Track and visualize real-time network usage with graphs showing upload/download speeds
 - **SSL Certificate Checker**: Verify website certificates, check expiration dates, and validate certificate chains
 - **IP Geolocation**: Map IP addresses to physical locations with interactive HTML maps and visualize network paths across the globe
-
-## Screenshots
-
-Here are some example screenshots of NetworkScan Pro in action:
-
-![Port Scanner](https://via.placeholder.com/400x300/222222/00ff00?text=Port+Scanner)
-![Ping Utility](https://via.placeholder.com/400x300/222222/ffff00?text=Ping+Utility)
-
+- 
 ## Requirements
 
 - **Python 3.8+** or newer
@@ -34,7 +25,7 @@ Here are some example screenshots of NetworkScan Pro in action:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/networkscanner.git
+   git clone https://github.com/Wian47/networkscanner.git
    cd networkscanner
    ```
 
@@ -194,17 +185,3 @@ NetworkScan Pro is built using:
 - **Scapy**: For advanced packet crafting capabilities
 - **DNSPython**: For comprehensive DNS operations
 - **Folium**: For generating interactive maps of IP locations and network paths
-
-## License
-
-MIT License
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Acknowledgements
-
-- The scapy development team
-- Rich library contributors
-- Networking communities for testing and feedback
