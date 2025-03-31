@@ -2,6 +2,9 @@
 
 A feature-rich, visually appealing command-line network diagnostic tool with interactive menus, progress visualization, and comprehensive scanning capabilities.
 
+![image](https://github.com/user-attachments/assets/9438a168-d813-4c15-8558-897af4c056ef)
+
+
 ## Features
 
 - **Port Scanner**: Scan single IPs or ranges with service detection and response time measurement
