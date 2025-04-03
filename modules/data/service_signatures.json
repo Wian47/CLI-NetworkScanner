@@ -1,0 +1,130 @@
+{
+  "21": [
+    {
+      "regex": "FTP server \\(Version ([\\d\\.]+)",
+      "service": "Generic FTP",
+      "version_group": 1
+    },
+    {
+      "regex": "FileZilla Server ([\\d\\.]+)",
+      "service": "FileZilla FTP",
+      "version_group": 1
+    },
+    {
+      "regex": "ProFTPD ([\\d\\.]+)",
+      "service": "ProFTPD",
+      "version_group": 1
+    },
+    {
+      "regex": "Pure-FTPd",
+      "service": "Pure-FTPd",
+      "version_group": null
+    },
+    {
+      "regex": "vsFTPd ([\\d\\.]+)",
+      "service": "vsFTPd",
+      "version_group": 1
+    }
+  ],
+  "22": [
+    {
+      "regex": "SSH-([\\d\\.]+)-OpenSSH[_-]([\\d\\.]+)",
+      "service": "OpenSSH",
+      "version_group": 2
+    },
+    {
+      "regex": "SSH-([\\d\\.]+)-dropbear_([\\d\\.]+)",
+      "service": "Dropbear SSH",
+      "version_group": 2
+    }
+  ],
+  "23": [
+    {
+      "regex": "Welcome to ([\\w\\s]+) Telnet",
+      "service": "Telnet",
+      "version_group": null
+    }
+  ],
+  "25": [
+    {
+      "regex": "220 .* ESMTP Postfix \\(([^\\)]+)\\)",
+      "service": "Postfix SMTP",
+      "version_group": 1
+    },
+    {
+      "regex": "220 .* ESMTP Sendmail ([^;]+);",
+      "service": "Sendmail SMTP",
+      "version_group": 1
+    },
+    {
+      "regex": "220 .* ESMTP Exim ([\\d\\.]+)",
+      "service": "Exim SMTP",
+      "version_group": 1
+    }
+  ],
+  "80": [
+    {
+      "regex": "Server: Apache/([\\d\\.]+)",
+      "service": "Apache",
+      "version_group": 1
+    },
+    {
+      "regex": "Server: nginx/([\\d\\.]+)",
+      "service": "Nginx",
+      "version_group": 1
+    },
+    {
+      "regex": "Server: Microsoft-IIS/([\\d\\.]+)",
+      "service": "IIS",
+      "version_group": 1
+    },
+    {
+      "regex": "Server: lighttpd/([\\d\\.]+)",
+      "service": "Lighttpd",
+      "version_group": 1
+    }
+  ],
+  "443": [
+    {
+      "regex": "Server: Apache/([\\d\\.]+)",
+      "service": "Apache SSL",
+      "version_group": 1
+    },
+    {
+      "regex": "Server: nginx/([\\d\\.]+)",
+      "service": "Nginx SSL",
+      "version_group": 1
+    },
+    {
+      "regex": "Server: Microsoft-IIS/([\\d\\.]+)",
+      "service": "IIS SSL",
+      "version_group": 1
+    }
+  ],
+  "3306": [
+    {
+      "regex": "([.\\d]+)-MariaDB",
+      "service": "MariaDB",
+      "version_group": 1
+    },
+    {
+      "regex": "([.\\d]+)-MySQL",
+      "service": "MySQL",
+      "version_group": 1
+    }
+  ],
+  "5432": [
+    {
+      "regex": "PostgreSQL ([\\d\\.]+)",
+      "service": "PostgreSQL",
+      "version_group": 1
+    }
+  ],
+  "27017": [
+    {
+      "regex": "MongoDB ([\\d\\.]+)",
+      "service": "MongoDB",
+      "version_group": 1
+    }
+  ]
+}
