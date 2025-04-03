@@ -2,6 +2,10 @@
 import argparse
 import sys
 import time
+import os
+import socket
+import ipaddress
+import platform
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt, IntPrompt, FloatPrompt, Confirm
@@ -19,8 +23,9 @@ from modules.bandwidth_monitor import BandwidthMonitor
 from modules.ssl_checker import SSLCertificateChecker
 from modules.ip_geolocation import IPGeolocation
 from modules.service_identification import ServiceIdentifier
+from modules.mac_address_changer import MACAddressChanger
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 console = Console()
 
 def display_banner():
@@ -69,6 +74,7 @@ def main_menu():
             ("7", "📈 Bandwidth Monitor", "Track real-time network usage"),
             ("8", "🔒 SSL Certificate Checker", "Verify SSL/TLS certificates"),
             ("9", "🌍 IP Geolocation", "Map IP addresses to physical locations"),
+            ("m", "📱 MAC Address Changer", "Change network interface MAC addresses"),
             ("v", "🛡 Vulnerability Scanner", "Scan for service vulnerabilities"),
             ("q", "🚪 Exit", "Quit the application")
         ]
@@ -86,7 +92,7 @@ def main_menu():
 
         choice = Prompt.ask(
             "\n[bold cyan]Enter your choice[/bold cyan]",
-            choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "v", "q"],
+            choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "m", "v", "q"],
             default="q",
             show_choices=True,
             show_default=True
@@ -110,6 +116,8 @@ def main_menu():
             ssl_checker_menu()
         elif choice == "9":
             ip_geolocation_menu()
+        elif choice == "m":
+            mac_address_changer_menu()
         elif choice == "v":
             vulnerability_scanner_menu()
         elif choice == "q":
@@ -1084,6 +1092,128 @@ def ip_geolocation_menu():
         geolocation.trace_path(target, output_file, open_map)
 
     input("\nPress Enter to return to main menu...")
+
+def mac_address_changer_menu():
+    """Handle the MAC address changer menu options."""
+    console.print("\n[bold cyan]━━━ MAC ADDRESS CHANGER ━━━[/bold cyan]", justify="center")
+
+    # Create a panel explaining MAC address changing
+    mac_info = Panel(
+        "[bold]MAC Address Changing[/bold]\n\n"
+        "A MAC (Media Access Control) address is a unique identifier assigned to a network interface. "
+        "Changing your MAC address can be useful for:\n"
+        "  • Bypassing MAC filtering on networks\n"
+        "  • Increasing privacy by preventing tracking\n"
+        "  • Testing network security\n"
+        "  • Troubleshooting network issues\n\n"
+        "[bold yellow]Note:[/bold yellow] Changing MAC addresses may require administrator/root privileges.",
+        title="About MAC Addresses",
+        border_style="blue",
+        padding=(1, 2)
+    )
+    console.print(mac_info)
+
+    # Initialize MAC address changer
+    mac_changer = MACAddressChanger(console)
+
+    # Display available interfaces
+    console.print("\n[bold]Available Network Interfaces:[/bold]")
+    interfaces = mac_changer.display_interfaces()
+
+    if not interfaces:
+        console.print("[bold red]No network interfaces available for MAC address changing.[/bold red]")
+        input("\nPress Enter to return to main menu...")
+        return
+
+    # Create a table for MAC changer options
+    mac_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
+    mac_table.add_column(style="dim cyan", justify="center", width=5)
+    mac_table.add_column(style="yellow")
+    mac_table.add_column(style="dim", max_width=60)
+
+    mac_table.add_row("1", "Change to Random MAC", "Assign a random MAC address to an interface")
+    mac_table.add_row("2", "Change to Specific MAC", "Set a custom MAC address for an interface")
+    mac_table.add_row("3", "Restore Original MAC", "Restore the original MAC address of an interface")
+    mac_table.add_row("4", "Return to Main Menu", "Go back to the main menu")
+
+    console.print("\n[bold]Select an option:[/bold]")
+    console.print(mac_table)
+
+    mac_choice = Prompt.ask(
+        "[bold cyan]Choose option[/bold cyan]",
+        choices=["1", "2", "3", "4"],
+        default="4"
+    )
+
+    if mac_choice == "4":
+        return
+
+    # Select interface
+    console.print("\n[bold]Select a network interface:[/bold]")
+    interface_num = IntPrompt.ask(
+        "Enter interface number",
+        default=1,
+        show_default=True
+    )
+
+    # Validate interface selection
+    if interface_num < 1 or interface_num > len(interfaces):
+        console.print("[bold red]Invalid interface selection.[/bold red]")
+        input("\nPress Enter to return to main menu...")
+        return
+
+    selected_interface = interfaces[interface_num - 1]
+    interface_name = selected_interface["name"]
+    current_mac = selected_interface["mac"]
+
+    console.print(f"\n[bold]Selected interface:[/bold] [green]{interface_name}[/green] (Current MAC: [yellow]{current_mac}[/yellow])")
+
+    # Check for admin/root privileges
+    admin_required_warning = "\n[bold yellow]Note:[/bold yellow] Changing MAC addresses requires administrator/root privileges."
+    if platform.system() == "Windows":
+        admin_required_warning += " Make sure you're running as Administrator."
+    else:
+        admin_required_warning += " Make sure you're running with sudo."
+    console.print(admin_required_warning)
+
+    # Process the selected option
+    if mac_choice == "1":
+        # Change to random MAC
+        if Confirm.ask("\n[bold]Change to a random MAC address?[/bold]"):
+            result = mac_changer.change_mac(interface_name)
+            if result:
+                console.print("[bold green]MAC address changed successfully![/bold green]")
+            else:
+                console.print("[bold red]Failed to change MAC address.[/bold red]")
+
+    elif mac_choice == "2":
+        # Change to specific MAC
+        new_mac = Prompt.ask(
+            "\n[bold]Enter new MAC address[/bold] (format: XX:XX:XX:XX:XX:XX)",
+            default=current_mac
+        )
+
+        if Confirm.ask(f"\n[bold]Change MAC address to {new_mac}?[/bold]"):
+            result = mac_changer.change_mac(interface_name, new_mac)
+            if result:
+                console.print("[bold green]MAC address changed successfully![/bold green]")
+            else:
+                console.print("[bold red]Failed to change MAC address.[/bold red]")
+
+    elif mac_choice == "3":
+        # Restore original MAC
+        result = mac_changer.restore_original_mac(interface_name)
+        if not result:
+            console.print("[bold yellow]No original MAC address stored or restoration failed.[/bold yellow]")
+            console.print("[dim]Note: Original MACs are only stored for the current session.[/dim]")
+
+    # Display current interfaces after change
+    console.print("\n[bold]Current Network Interfaces:[/bold]")
+    mac_changer.display_interfaces()
+
+    console.print("\n[bold cyan]━━━ MAC Address Operation Complete ━━━[/bold cyan]", justify="center")
+    input("\nPress Enter to return to main menu...")
+    return
 
 def parse_arguments():
     """Parse command line arguments for direct CLI usage."""
