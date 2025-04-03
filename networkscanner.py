@@ -74,9 +74,9 @@ def main_menu():
             ("7", "📈 Bandwidth Monitor", "Track real-time network usage"),
             ("8", "🔒 SSL Certificate Checker", "Verify SSL/TLS certificates"),
             ("9", "🌍 IP Geolocation", "Map IP addresses to physical locations"),
-            ("m", "📱 MAC Address Changer", "Change network interface MAC addresses"),
-            ("v", "🛡 Vulnerability Scanner", "Scan for service vulnerabilities"),
-            ("q", "🚪 Exit", "Quit the application")
+            ("10", "📱 MAC Address Changer", "Change network interface MAC addresses"),
+            ("11", "🛡 Vulnerability Scanner", "Scan for service vulnerabilities"),
+            ("12", "🚪 Exit", "Quit the application")
         ]
 
         # Create a stylized menu table
@@ -92,8 +92,8 @@ def main_menu():
 
         choice = Prompt.ask(
             "\n[bold cyan]Enter your choice[/bold cyan]",
-            choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "m", "v", "q"],
-            default="q",
+            choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
+            default="12",
             show_choices=True,
             show_default=True
         )
@@ -116,11 +116,11 @@ def main_menu():
             ssl_checker_menu()
         elif choice == "9":
             ip_geolocation_menu()
-        elif choice == "m":
+        elif choice == "10":
             mac_address_changer_menu()
-        elif choice == "v":
+        elif choice == "11":
             vulnerability_scanner_menu()
-        elif choice == "q":
+        elif choice == "12":
             console.print("\n[bold yellow]━━━ Thank you for using NetworkScan Pro ━━━[/bold yellow]", justify="center")
             sys.exit(0)
 
@@ -179,29 +179,67 @@ def port_scanner_menu():
         show_default=True
     )
 
-    # Initialize and run port scanner
+    # Advanced scan options
+    console.print("\n[bold]Advanced Scanning Options:[/bold]")
+    advanced_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
+    advanced_table.add_column(style="cyan", justify="center", width=3)
+    advanced_table.add_column(style="white")
+    advanced_table.add_column(style="dim", width=40)
+
+    advanced_options = [
+        ("1", "Basic Scan", "Standard TCP connect scan (reliable but less stealthy)"),
+        ("2", "Advanced Scan", "Configure advanced scan options (SYN, FIN, XMAS, etc.)"),
+    ]
+
+    for key, desc, help_text in advanced_options:
+        advanced_table.add_row(f"[{key}]", desc, help_text)
+
+    console.print(advanced_table)
+
+    advanced_choice = Prompt.ask(
+        "[bold cyan]Choose scan mode[/bold cyan]",
+        choices=["1", "2"],
+        default="1"
+    )
+
+    # Initialize port scanner
     scanner = PortScanner(console)
 
-    # Check for advanced scanning capabilities (using SYN scan)
-    try:
-        # Only use advanced if we're running as admin/root
-        import os
-        advanced = False
-        if os.name == 'nt':  # Windows
-            try:
-                import ctypes
-                advanced = ctypes.windll.shell32.IsUserAnAdmin() != 0
-            except:
-                advanced = False
-        else:  # Unix-like
-            advanced = os.geteuid() == 0
+    # Set advanced options
+    advanced = False
+    configure = False
 
-        if advanced:
-            console.print("[green]Using advanced scanning techniques (SYN scan)[/green]")
-    except:
-        advanced = False
+    if advanced_choice == "2":
+        # Check for admin privileges for advanced scanning
+        try:
+            import os
+            if os.name == 'nt':  # Windows
+                try:
+                    import ctypes
+                    advanced = ctypes.windll.shell32.IsUserAnAdmin() != 0
+                except:
+                    advanced = False
+            else:  # Unix-like
+                try:
+                    advanced = os.geteuid() == 0
+                except:
+                    advanced = False
 
-    scanner.scan(target, ports, threads=thread_count, advanced=advanced)
+            if advanced:
+                console.print("[green]Administrator/root privileges detected. Advanced scanning available.[/green]")
+                configure = True
+            else:
+                console.print("[yellow]Warning: Some advanced scan types require administrator/root privileges.[/yellow]")
+                if Confirm.ask("[bold yellow]Continue with advanced configuration anyway?[/bold yellow]", default=True):
+                    configure = True
+                    advanced = True  # We'll let the scanner handle privilege checks for specific scan types
+        except:
+            console.print("[yellow]Could not determine privilege level. Some scan types may not work.[/yellow]")
+            if Confirm.ask("[bold yellow]Continue with advanced configuration anyway?[/bold yellow]", default=True):
+                configure = True
+
+    # Run the scan
+    scanner.scan(target, ports, threads=thread_count, advanced=advanced, configure=configure)
 
     console.print("\n[bold cyan]━━━ Scan Complete ━━━[/bold cyan]", justify="center")
     input("\nPress Enter to return to main menu...")

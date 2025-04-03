@@ -6,17 +6,34 @@ import platform
 import subprocess
 import os
 import queue
-from typing import List, Dict, Any, Optional, Tuple
+import random
+import struct
+import ipaddress
+from enum import Enum
+from typing import List, Dict, Any, Optional, Tuple, Union, Set
 from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn, TaskProgressColumn, TaskID
 from rich.panel import Panel
+from rich.prompt import Prompt, IntPrompt, Confirm
 
 # Import service identification module
 from modules.service_identification import ServiceIdentifier
 
+class ScanType(Enum):
+    """Enum for different types of port scans."""
+    TCP_CONNECT = "TCP Connect"
+    TCP_SYN = "TCP SYN"
+    TCP_FIN = "TCP FIN"
+    TCP_XMAS = "TCP XMAS"
+    TCP_NULL = "TCP NULL"
+    UDP = "UDP"
+    IDLE = "Idle Scan"
+    ACK = "ACK Scan"
+    WINDOW = "Window Scan"
+
 class PortScanner:
-    """Port scanning module for NetworkScan Pro."""
+    """Advanced port scanning module for NetworkScan Pro."""
 
     def __init__(self, console: Console = None):
         """Initialize the port scanner."""
@@ -24,6 +41,14 @@ class PortScanner:
         self.results = {}
         self.lock = threading.Lock()
         self._use_advanced_scan = False
+        self._scan_type = ScanType.TCP_CONNECT
+        self._fragment_packets = False
+        self._spoof_mac = None
+        self._source_port = None
+        self._timeout = 1.0
+        self._max_retries = 1
+        self._scan_delay = 0.0
+        self._ttl = 64
 
         # Initialize service identifier
         self.service_identifier = ServiceIdentifier(console)
@@ -325,7 +350,198 @@ class PortScanner:
 
         return True, "Advanced scanning available"
 
-    def scan(self, target: str, ports: List[int], threads: int = 100, advanced: bool = False):
+    def configure_scan(self):
+        """Configure advanced scan options interactively."""
+        self.console.print("\n[bold cyan]Advanced Scan Configuration[/bold cyan]")
+
+        # Create a table for scan types
+        scan_table = Table(show_header=False, box=None, padding=(0, 1))
+        scan_table.add_column(style="dim cyan", justify="center", width=3)
+        scan_table.add_column(style="yellow")
+        scan_table.add_column(style="dim", max_width=60)
+
+        # Add scan types to table
+        scan_types = [
+            ("1", ScanType.TCP_CONNECT.value, "Standard TCP connect scan (most reliable)"),
+            ("2", ScanType.TCP_SYN.value, "Stealthy SYN scan (requires root/admin)"),
+            ("3", ScanType.TCP_FIN.value, "FIN scan - may bypass some firewalls"),
+            ("4", ScanType.TCP_XMAS.value, "XMAS scan - sets FIN, PSH, URG flags"),
+            ("5", ScanType.TCP_NULL.value, "NULL scan - no flags set"),
+            ("6", ScanType.UDP.value, "UDP scan - check for UDP services"),
+            ("7", ScanType.ACK.value, "ACK scan - useful for mapping firewall rules"),
+            ("8", ScanType.WINDOW.value, "Window scan - detects open ports via TCP window size"),
+            ("9", ScanType.IDLE.value, "Idle scan - uses a zombie host (advanced)"),
+        ]
+
+        for key, name, desc in scan_types:
+            scan_table.add_row(f"[{key}]", name, desc)
+
+        self.console.print("[bold]Select scan type:[/bold]")
+        self.console.print(scan_table)
+
+        scan_choice = Prompt.ask(
+            "[bold cyan]Choose scan type[/bold cyan]",
+            choices=[str(i) for i in range(1, 10)],
+            default="1"
+        )
+
+        # Set scan type based on choice
+        scan_type_map = {
+            "1": ScanType.TCP_CONNECT,
+            "2": ScanType.TCP_SYN,
+            "3": ScanType.TCP_FIN,
+            "4": ScanType.TCP_XMAS,
+            "5": ScanType.TCP_NULL,
+            "6": ScanType.UDP,
+            "7": ScanType.ACK,
+            "8": ScanType.WINDOW,
+            "9": ScanType.IDLE,
+        }
+        self._scan_type = scan_type_map[scan_choice]
+
+        # Check for admin privileges if needed
+        if self._scan_type in [ScanType.TCP_SYN, ScanType.TCP_FIN, ScanType.TCP_XMAS, ScanType.TCP_NULL, ScanType.IDLE]:
+            self._use_advanced_scan = True
+            is_admin = self._check_admin_privileges()
+            if not is_admin:
+                self.console.print("[bold yellow]Warning: This scan type requires administrator/root privileges.[/bold yellow]")
+                self.console.print("[yellow]Falling back to TCP Connect scan.[/yellow]")
+                self._scan_type = ScanType.TCP_CONNECT
+                self._use_advanced_scan = False
+
+        # Configure additional options
+        self.console.print("\n[bold]Additional scan options:[/bold]")
+
+        # Timing template
+        timing_table = Table(show_header=False, box=None, padding=(0, 1))
+        timing_table.add_column(style="dim cyan", justify="center", width=3)
+        timing_table.add_column(style="yellow")
+        timing_table.add_column(style="dim", max_width=60)
+
+        timing_options = [
+            ("1", "Paranoid", "Very slow, evasive scan (5s between probes)"),
+            ("2", "Sneaky", "Slow scan to avoid detection (1s between probes)"),
+            ("3", "Polite", "Slows down to consume less bandwidth (0.4s between probes)"),
+            ("4", "Normal", "Default timing (0.1s between probes)"),
+            ("5", "Aggressive", "Quick scan, assumes reliable network (0.01s between probes)"),
+            ("6", "Insane", "Very fast scan, may overwhelm targets (no delay)"),
+        ]
+
+        for key, name, desc in timing_options:
+            timing_table.add_row(f"[{key}]", name, desc)
+
+        self.console.print("[bold]Select timing template:[/bold]")
+        self.console.print(timing_table)
+
+        timing_choice = Prompt.ask(
+            "[bold cyan]Choose timing template[/bold cyan]",
+            choices=[str(i) for i in range(1, 7)],
+            default="4"
+        )
+
+        # Set timing parameters based on choice
+        timing_map = {
+            "1": 5.0,    # Paranoid
+            "2": 1.0,    # Sneaky
+            "3": 0.4,    # Polite
+            "4": 0.1,    # Normal
+            "5": 0.01,   # Aggressive
+            "6": 0.0,    # Insane
+        }
+        self._scan_delay = timing_map[timing_choice]
+
+        # Set timeout based on timing
+        timeout_map = {
+            "1": 5.0,    # Paranoid
+            "2": 3.0,    # Sneaky
+            "3": 2.0,    # Polite
+            "4": 1.0,    # Normal
+            "5": 0.5,    # Aggressive
+            "6": 0.3,    # Insane
+        }
+        self._timeout = timeout_map[timing_choice]
+
+        # Set retries based on timing
+        retry_map = {
+            "1": 2,      # Paranoid
+            "2": 2,      # Sneaky
+            "3": 2,      # Polite
+            "4": 1,      # Normal
+            "5": 1,      # Aggressive
+            "6": 0,      # Insane
+        }
+        self._max_retries = retry_map[timing_choice]
+
+        # Additional options
+        if self._use_advanced_scan:
+            self._fragment_packets = Confirm.ask(
+                "[bold cyan]Fragment packets (may bypass some firewalls)?[/bold cyan]",
+                default=False
+            )
+
+            use_custom_source_port = Confirm.ask(
+                "[bold cyan]Use custom source port?[/bold cyan]",
+                default=False
+            )
+
+            if use_custom_source_port:
+                self._source_port = IntPrompt.ask(
+                    "[bold cyan]Enter source port[/bold cyan]",
+                    default=random.randint(49152, 65535)
+                )
+
+            use_custom_ttl = Confirm.ask(
+                "[bold cyan]Use custom TTL value?[/bold cyan]",
+                default=False
+            )
+
+            if use_custom_ttl:
+                self._ttl = IntPrompt.ask(
+                    "[bold cyan]Enter TTL value[/bold cyan]",
+                    default=64
+                )
+
+            if self._scan_type == ScanType.IDLE:
+                zombie_host = Prompt.ask(
+                    "[bold cyan]Enter zombie host IP address[/bold cyan]",
+                    default=""
+                )
+                if zombie_host:
+                    self._zombie_host = zombie_host
+                else:
+                    self.console.print("[yellow]No zombie host specified. Falling back to TCP Connect scan.[/yellow]")
+                    self._scan_type = ScanType.TCP_CONNECT
+                    self._use_advanced_scan = False
+
+        # Display configuration summary
+        config_summary = Panel(
+            f"Scan Type: [bold]{self._scan_type.value}[/bold]\n"
+            f"Timing: [bold]{timing_options[int(timing_choice)-1][1]}[/bold] (Delay: {self._scan_delay}s)\n"
+            f"Timeout: [bold]{self._timeout}s[/bold]\n"
+            f"Retries: [bold]{self._max_retries}[/bold]\n"
+            f"Fragment Packets: [bold]{'Yes' if self._fragment_packets else 'No'}[/bold]\n"
+            f"Source Port: [bold]{self._source_port if self._source_port else 'Random'}[/bold]\n"
+            f"TTL: [bold]{self._ttl}[/bold]",
+            title="Scan Configuration",
+            border_style="blue",
+            padding=(1, 2)
+        )
+        self.console.print(config_summary)
+
+        return True
+
+    def _check_admin_privileges(self) -> bool:
+        """Check if the script is running with administrator/root privileges."""
+        try:
+            if platform.system() == "Windows":
+                import ctypes
+                return ctypes.windll.shell32.IsUserAnAdmin() != 0
+            else:  # Unix-like
+                return os.geteuid() == 0
+        except:
+            return False
+
+    def scan(self, target: str, ports: List[int], threads: int = 100, advanced: bool = False, configure: bool = False):
         """
         Scan the given target for open ports.
 
@@ -334,12 +550,19 @@ class PortScanner:
             ports: List of ports to scan
             threads: Number of threads to use for scanning
             advanced: Whether to use advanced scanning techniques
+            configure: Whether to configure scan options interactively
         """
         self.results = {}
+        self._use_advanced_scan = advanced
+
+        # Configure scan if requested
+        if configure:
+            self.configure_scan()
+
         self.console.print(f"\n[bold cyan]Starting scan of [yellow]{target}[/yellow]...[/bold cyan]")
 
-        if advanced:
-            self.console.print("[bold green]Using advanced TCP SYN scanning technique[/bold green]")
+        if self._use_advanced_scan:
+            self.console.print(f"[bold green]Using advanced {self._scan_type.value} scanning technique[/bold green]")
         else:
             self.console.print("[dim]Using standard TCP connect scanning[/dim]")
 
