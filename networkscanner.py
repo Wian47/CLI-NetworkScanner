@@ -2,16 +2,15 @@
 import argparse
 import sys
 import time
-import os
-import socket
-import ipaddress
 import platform
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt, IntPrompt, FloatPrompt, Confirm
 from rich.table import Table
-from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn
 from rich import box
+
+# Import custom modules
+import history
 
 from modules.port_scanner import PortScanner
 from modules.ping_utility import PingUtility
@@ -76,24 +75,24 @@ def main_menu():
             ("9", "🌍 IP Geolocation", "Map IP addresses to physical locations"),
             ("10", "📱 MAC Address Changer", "Change network interface MAC addresses"),
             ("11", "🛡 Vulnerability Scanner", "Scan for service vulnerabilities"),
-            ("12", "🚪 Exit", "Quit the application")
+            ("12", "📝 Scan History", "View and compare past scan results"),
+            ("13", "🚪 Exit", "Quit the application")
         ]
 
-        # Create a stylized menu table
-        menu_table = Table(show_header=False, box=box.ROUNDED, expand=True, border_style="cyan")
+        # Create a stylized menu table with improved formatting
+        menu_table = Table(show_header=False, box=box.ROUNDED, expand=True, border_style="cyan", padding=(0, 1))
         menu_table.add_column(style="dim cyan", justify="center", width=5)
         menu_table.add_column(style="bold white", justify="left")
-        menu_table.add_column(style="dim", justify="left")
 
         for key, desc, help_text in menu_items:
-            menu_table.add_row(f"[{key}]", desc, help_text)
+            menu_table.add_row(f"[{key}]", f"{desc} - {help_text}")
 
         console.print(menu_table)
 
         choice = Prompt.ask(
             "\n[bold cyan]Enter your choice[/bold cyan]",
-            choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
-            default="12",
+            choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"],
+            default="13",
             show_choices=True,
             show_default=True
         )
@@ -121,6 +120,8 @@ def main_menu():
         elif choice == "11":
             vulnerability_scanner_menu()
         elif choice == "12":
+            history.show_history_menu()
+        elif choice == "13":
             console.print("\n[bold yellow]━━━ Thank you for using NetworkScan Pro ━━━[/bold yellow]", justify="center")
             sys.exit(0)
 
@@ -134,8 +135,8 @@ def port_scanner_menu():
     console.print("\n[bold]Select port scan type:[/bold]")
     port_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
     port_table.add_column(style="cyan", justify="center", width=3)
-    port_table.add_column(style="white")
-    port_table.add_column(style="dim", width=30)
+    port_table.add_column(style="white", width=20, no_wrap=False)
+    port_table.add_column(style="dim", width=40, no_wrap=False)
 
     port_options = [
         ("1", "Common ports", "Most frequently used (20-25, 53, 80, 443, 3306, etc.)"),
@@ -212,8 +213,8 @@ def port_scanner_menu():
     if advanced_choice == "2":
         # Check for admin privileges for advanced scanning
         try:
-            import os
-            if os.name == 'nt':  # Windows
+            import platform
+            if platform.system() == 'Windows':  # Windows
                 try:
                     import ctypes
                     advanced = ctypes.windll.shell32.IsUserAnAdmin() != 0
@@ -221,6 +222,7 @@ def port_scanner_menu():
                     advanced = False
             else:  # Unix-like
                 try:
+                    import os
                     advanced = os.geteuid() == 0
                 except:
                     advanced = False
@@ -254,8 +256,8 @@ def ping_utility_menu():
     console.print("\n[bold]Select ping type:[/bold]")
     ping_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
     ping_table.add_column(style="cyan", justify="center", width=3)
-    ping_table.add_column(style="white", no_wrap=True)
-    ping_table.add_column(style="dim")
+    ping_table.add_column(style="white", width=20, no_wrap=False)
+    ping_table.add_column(style="dim", width=40, no_wrap=False)
 
     ping_options = [
         ("1", "Standard ping", "Send 4 ICMP echo requests and display statistics"),
@@ -356,8 +358,8 @@ def dns_tools_menu():
     # DNS tools sub-menu
     dns_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
     dns_table.add_column(style="cyan", justify="center", width=3)
-    dns_table.add_column(style="white", no_wrap=True)
-    dns_table.add_column(style="dim")
+    dns_table.add_column(style="white", width=20, no_wrap=False)
+    dns_table.add_column(style="dim", width=40, no_wrap=False)
 
     dns_options = [
         ("1", "A Record Lookup", "Find IP addresses for a domain"),
@@ -429,8 +431,8 @@ def network_info_menu():
     # Network info sub-menu
     net_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
     net_table.add_column(style="cyan", justify="center", width=3)
-    net_table.add_column(style="white", no_wrap=True)
-    net_table.add_column(style="dim")
+    net_table.add_column(style="white", width=25, no_wrap=False)
+    net_table.add_column(style="dim", width=40, no_wrap=False)
 
     net_options = [
         ("1", "🖧 Local IP Configuration", "View your local network addresses and interfaces"),
@@ -491,13 +493,13 @@ def device_discovery_menu():
 
     # Get available network interfaces and their ranges
     discovery = DeviceDiscovery(console)
-    interfaces = discovery._get_network_interfaces()
+    # Get network interfaces (used internally by discovery._get_network_range())
 
     # Create a table of available networks
     network_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
     network_table.add_column(style="cyan", justify="center", width=3)
-    network_table.add_column(style="white")
-    network_table.add_column(style="dim")
+    network_table.add_column(style="white", width=25, no_wrap=False)
+    network_table.add_column(style="dim", width=40, no_wrap=False)
 
     # Add the default network option
     default_range = discovery._get_network_range()
@@ -595,8 +597,8 @@ def bandwidth_monitor_menu():
     # Create a table of available interfaces
     interface_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
     interface_table.add_column(style="cyan", justify="center", width=3)
-    interface_table.add_column(style="white")
-    interface_table.add_column(style="dim")
+    interface_table.add_column(style="white", width=25, no_wrap=False)
+    interface_table.add_column(style="dim", width=40, no_wrap=False)
 
     # Add all interfaces option
     interface_table.add_row("[1]", "All interfaces", "Monitor all network interfaces combined")
@@ -635,8 +637,8 @@ def bandwidth_monitor_menu():
 
     duration_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
     duration_table.add_column(style="cyan", justify="center", width=3)
-    duration_table.add_column(style="white", no_wrap=True)
-    duration_table.add_column(style="dim")
+    duration_table.add_column(style="white", width=20, no_wrap=False)
+    duration_table.add_column(style="dim", width=40, no_wrap=False)
 
     duration_options = [
         ("1", "Continuous", "Monitor until manually stopped (Ctrl+C)"),
@@ -742,8 +744,8 @@ def vulnerability_scanner_menu():
     # Create a table for vulnerability scanner options
     vuln_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
     vuln_table.add_column(style="dim cyan", justify="center", width=5)
-    vuln_table.add_column(style="yellow")
-    vuln_table.add_column(style="dim", max_width=60)
+    vuln_table.add_column(style="yellow", width=25, no_wrap=False)
+    vuln_table.add_column(style="dim", width=40, no_wrap=False)
 
     vuln_table.add_row("1", "Scan Single Host", "Scan a specific host for vulnerabilities")
     vuln_table.add_row("2", "Scan Network Range", "Scan a range of hosts for vulnerabilities")
@@ -772,8 +774,8 @@ def vulnerability_scanner_menu():
         console.print("\n[bold]Select ports to scan:[/bold]")
         port_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
         port_table.add_column(style="dim cyan", justify="center", width=5)
-        port_table.add_column(style="yellow")
-        port_table.add_column(style="dim", max_width=60)
+        port_table.add_column(style="yellow", width=25, no_wrap=False)
+        port_table.add_column(style="dim", width=40, no_wrap=False)
 
         port_table.add_row("1", "Common Ports", "Scan commonly used ports (faster)")
         port_table.add_row("2", "All Ports (1-1024)", "Scan all privileged ports (slower)")
@@ -818,9 +820,9 @@ def vulnerability_scanner_menu():
         # Check for advanced scanning capabilities (using SYN scan)
         try:
             # Only use advanced if we're running as admin/root
-            import os
+            import platform
             advanced = False
-            if os.name == 'nt':  # Windows
+            if platform.system() == 'Windows':  # Windows
                 try:
                     import ctypes
                     advanced = ctypes.windll.shell32.IsUserAnAdmin() != 0
@@ -828,6 +830,7 @@ def vulnerability_scanner_menu():
                     advanced = False
             else:  # Unix-like
                 try:
+                    import os
                     advanced = os.geteuid() == 0
                 except:
                     advanced = False
@@ -901,8 +904,8 @@ def vulnerability_scanner_menu():
         console.print("\n[bold]Select ports to scan:[/bold]")
         port_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
         port_table.add_column(style="dim cyan", justify="center", width=5)
-        port_table.add_column(style="yellow")
-        port_table.add_column(style="dim", max_width=60)
+        port_table.add_column(style="yellow", width=25, no_wrap=False)
+        port_table.add_column(style="dim", width=40, no_wrap=False)
 
         port_table.add_row("1", "Common Ports Only", "Scan only the most common ports (faster)")
         port_table.add_row("2", "Extended Port Set", "Scan a larger set of common ports")
@@ -933,7 +936,7 @@ def vulnerability_scanner_menu():
         discovery.discover(network_range=network_range, threads=50, use_ping=True, resolve_names=True)
 
         # Get list of discovered hosts
-        discovered_hosts = [info["ip"] for ip, info in discovery.results.items()]
+        discovered_hosts = [info["ip"] for _, info in discovery.results.items()]
 
         if not discovered_hosts:
             console.print("[bold yellow]No hosts discovered on the network. Scan aborted.[/bold yellow]")
@@ -1075,8 +1078,8 @@ def ip_geolocation_menu():
     # IP Geolocation sub-menu
     geo_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
     geo_table.add_column(style="cyan", justify="center", width=3)
-    geo_table.add_column(style="white", no_wrap=True)
-    geo_table.add_column(style="dim")
+    geo_table.add_column(style="white", width=25, no_wrap=False)
+    geo_table.add_column(style="dim", width=40, no_wrap=False)
 
     geo_options = [
         ("1", "🌐 Lookup IP Address", "Find location of a single IP address"),
@@ -1166,8 +1169,8 @@ def mac_address_changer_menu():
     # Create a table for MAC changer options
     mac_table = Table(show_header=False, box=box.SIMPLE, border_style="bright_blue", padding=(0, 1))
     mac_table.add_column(style="dim cyan", justify="center", width=5)
-    mac_table.add_column(style="yellow")
-    mac_table.add_column(style="dim", max_width=60)
+    mac_table.add_column(style="yellow", width=25, no_wrap=False)
+    mac_table.add_column(style="dim", width=40, no_wrap=False)
 
     mac_table.add_row("1", "Change to Random MAC", "Assign a random MAC address to an interface")
     mac_table.add_row("2", "Change to Specific MAC", "Set a custom MAC address for an interface")
@@ -1349,16 +1352,20 @@ def process_cli_arguments(args):
         # Check for advanced scanning capabilities (using SYN scan)
         try:
             # Only use advanced if we're running as admin/root
-            import os
+            import platform
             advanced = False
-            if os.name == 'nt':  # Windows
+            if platform.system() == 'Windows':  # Windows
                 try:
                     import ctypes
                     advanced = ctypes.windll.shell32.IsUserAnAdmin() != 0
                 except:
                     advanced = False
             else:  # Unix-like
-                advanced = os.geteuid() == 0
+                try:
+                    import os
+                    advanced = os.geteuid() == 0
+                except:
+                    advanced = False
         except:
             advanced = False
 

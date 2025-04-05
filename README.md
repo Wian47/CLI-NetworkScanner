@@ -16,7 +16,9 @@ A feature-rich, visually appealing command-line network diagnostic tool with int
 - **Bandwidth Monitor**: Track and visualize real-time network usage with graphs showing upload/download speeds
 - **SSL Certificate Checker**: Verify website certificates, check expiration dates, and validate certificate chains
 - **IP Geolocation**: Map IP addresses to physical locations with interactive HTML maps and visualize network paths across the globe
-- 
+- **Scan History**: Store, view, and compare scan results over time with a comprehensive history database
+- **Export Reports**: Generate professional reports in HTML, CSV, and JSON formats for sharing and analysis
+-
 ## Requirements
 
 - **Python 3.8+** or newer
@@ -168,6 +170,15 @@ python networkscanner.py geoip 8.8.8.8 --output map.html --open # Generate and o
 - **Interactive Maps**: Generate interactive HTML maps with detailed location information
 - **Browser Integration**: Automatically open generated maps in your default web browser
 - **Caching System**: Local caching of IP lookup results to reduce API calls and improve performance
+
+### Scan History and Reporting Options
+
+- **Persistent Storage**: Save scan results to a SQLite database for future reference
+- **Historical Analysis**: View past scans with detailed information about results
+- **Comparison Tool**: Compare two scans to identify changes in network configuration
+- **Multiple Export Formats**: Generate reports in HTML, CSV, and JSON formats
+- **Custom Filenames**: Specify custom filenames for exported reports
+- **Professional HTML Reports**: Create visually appealing HTML reports with tables and styling
 
 ## Troubleshooting
 

@@ -20,6 +20,9 @@ from rich.prompt import Prompt, IntPrompt, Confirm
 # Import service identification module
 from modules.service_identification import ServiceIdentifier
 
+# Import database module
+from database import ScanDatabase
+
 class ScanType(Enum):
     """Enum for different types of port scans."""
     TCP_CONNECT = "TCP Connect"
@@ -790,10 +793,13 @@ class PortScanner:
             raise Exception(f"SYN scan error: {str(e)}")
 
     def _display_results(self, target: str, ip: str):
-        """Display scan results in a formatted table."""
+        """Display scan results in a formatted table and save to database."""
         open_ports = {port: info for port, info in self.results.items() if info["state"] == "open"}
         filtered_ports = {port: info for port, info in self.results.items() if info["state"] == "filtered"}
         closed_ports = {port: info for port, info in self.results.items() if info["state"] == "closed"}
+
+        # Save results to database
+        self._save_to_database(target, ip, open_ports, filtered_ports, closed_ports)
 
         # Perform service identification for open ports that don't have it yet
         for port, info in open_ports.items():
@@ -966,6 +972,10 @@ class PortScanner:
                 border_style="blue"
             ))
 
+        # Inform user that results have been saved
+        self.console.print("[green]✓ Scan results have been saved to the database.[/green]")
+        self.console.print("[dim]You can view and compare scan history from the main menu.[/dim]")
+
     def _check_http_directly(self, target: str, port: int) -> Dict[str, Any]:
         """
         Check if HTTP/HTTPS is directly accessible.
@@ -1039,3 +1049,61 @@ class PortScanner:
             return socket.getservbyport(port)
         except:
             return "Unknown"
+
+    def _save_to_database(self, target: str, ip: str, open_ports: Dict[int, Dict], filtered_ports: Dict[int, Dict], closed_ports: Dict[int, Dict]):
+        """
+        Save scan results to the database.
+
+        Args:
+            target: Target hostname or IP
+            ip: Resolved IP address
+            open_ports: Dictionary of open ports and their details
+            filtered_ports: Dictionary of filtered ports and their details
+            closed_ports: Dictionary of closed ports and their details
+        """
+        try:
+            # Connect to the database
+            db = ScanDatabase()
+
+            # Create a new scan entry
+            scan_metadata = {
+                "ip_address": ip,
+                "hostname": target if ip != target else None,
+                "open_ports": len(open_ports),
+                "filtered_ports": len(filtered_ports),
+                "closed_ports": len(closed_ports),
+                "total_ports": len(self.results),
+                "scan_type": self._scan_type.value if hasattr(self, '_scan_type') else "TCP Connect"
+            }
+
+            # Add the scan to the database
+            scan_id = db.add_scan(
+                scan_type="port_scan",
+                target=target,
+                description=f"Port scan of {target} ({len(open_ports)} open, {len(filtered_ports)} filtered, {len(closed_ports)} closed)",
+                metadata=scan_metadata
+            )
+
+            # Add all port results to the database
+            for port_type, ports in [("open", open_ports), ("filtered", filtered_ports), ("closed", closed_ports)]:
+                for port, info in ports.items():
+                    # Extract service banner if available
+                    banner = None
+                    if "service_details" in info and "banner" in info["service_details"]:
+                        banner = info["service_details"]["banner"]
+
+                    # Add the port scan result
+                    db.add_port_scan_result(
+                        scan_id=scan_id,
+                        port=port,
+                        protocol="tcp",  # Currently only TCP is supported
+                        state=info["state"],
+                        service=info["service"],
+                        banner=banner
+                    )
+
+            # Close the database connection
+            db.close()
+
+        except Exception as e:
+            self.console.print(f"[red]Error saving scan results to database: {str(e)}[/red]")
