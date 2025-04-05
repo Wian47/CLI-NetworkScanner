@@ -1,6 +1,13 @@
 # Cached data and generated files
 .cache/
-*.html
+
+# Generated reports (except example files)
+reports/*
+!reports/.gitkeep
+
+# Database files
+data/*.db
+!data/.gitkeep
 
 # Virtual Environment
 venv/
