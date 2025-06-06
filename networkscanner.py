@@ -25,7 +25,20 @@ from modules.service_identification import ServiceIdentifier
 from modules.mac_address_changer import MACAddressChanger
 
 VERSION = "1.2.0"
-console = Console()
+# Initialize console with proper encoding for Windows compatibility
+import os
+import sys
+if os.name == 'nt':  # Windows
+    # Force UTF-8 encoding on Windows to handle Unicode characters
+    if hasattr(sys.stdout, 'reconfigure'):
+        try:
+            sys.stdout.reconfigure(encoding='utf-8')
+            sys.stderr.reconfigure(encoding='utf-8')
+        except:
+            pass
+    console = Console(force_terminal=True, legacy_windows=False)
+else:
+    console = Console()
 
 def display_banner():
     """Display ASCII art banner with tool name and version."""
@@ -733,10 +746,6 @@ def ssl_checker_menu():
 
     input("\nPress Enter to return to the main menu...")
 
-def ip_geolocation_menu():
-    """Handle the IP geolocation menu options."""
-    console.print("\n[bold cyan]━━━ IP GEOLOCATION ━━━[/bold cyan]", justify="center")
-
 def vulnerability_scanner_menu():
     """Handle the vulnerability scanner menu options."""
     console.print("\n[bold cyan]━━━ VULNERABILITY SCANNER ━━━[/bold cyan]", justify="center")
@@ -880,7 +889,7 @@ def vulnerability_scanner_menu():
                 console.print(f"\n[bold yellow]Port {port} - {service_details['service_name']} {service_details['version'] or ''}[/bold yellow]")
                 service_identifier.display_service_info(service_details)
         else:
-            console.print("\n[bold green]✔ No vulnerabilities detected![/bold green]")
+            console.print("\n[bold green]✓ No vulnerabilities detected![/bold green]")
 
     elif vuln_choice == "2":
         # Scan network range
@@ -1044,7 +1053,7 @@ def vulnerability_scanner_menu():
                         console.print(f"\n[bold yellow]Port {port} - {service_details['service_name']} {service_details['version'] or ''}[/bold yellow]")
                         service_identifier.display_service_info(service_details)
         else:
-            console.print("\n[bold green]✔ No vulnerabilities detected in the network![/bold green]")
+            console.print("\n[bold green]✓ No vulnerabilities detected in the network![/bold green]")
 
     elif vuln_choice == "3":
         # Update vulnerability database
@@ -1055,7 +1064,7 @@ def vulnerability_scanner_menu():
         service_identifier = ServiceIdentifier(console)
         service_identifier._load_vulnerability_db()
 
-        console.print("[bold green]✔ Vulnerability database updated successfully![/bold green]")
+        console.print("[bold green]✓ Vulnerability database updated successfully![/bold green]")
 
     console.print("\n[bold cyan]━━━ Vulnerability Scanning Complete ━━━[/bold cyan]", justify="center")
     input("\nPress Enter to return to main menu...")

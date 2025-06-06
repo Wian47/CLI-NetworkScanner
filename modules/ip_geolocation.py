@@ -426,7 +426,7 @@ class IPGeolocation:
         is_anycast = self._is_potential_anycast(ip, geo_data)
         if is_anycast:
             known_service = self.anycast_ips.get(ip, "")
-            anycast_msg = f"[bold yellow]⚠️ WARNING: This appears to be an anycast IP address{' (' + known_service + ')' if known_service else ''}.[/bold yellow]"
+            anycast_msg = f"[bold yellow]⚠ WARNING: This appears to be an anycast IP address{' (' + known_service + ')' if known_service else ''}.[/bold yellow]"
             self.console.print(anycast_msg)
             self.console.print("[yellow]Anycast IPs are announced from multiple locations worldwide.[/yellow]")
             self.console.print("[yellow]The geolocation shown may not represent the actual server you're connecting to.[/yellow]")
@@ -583,7 +583,7 @@ class IPGeolocation:
             service_info = f" ({known_service})" if known_service else ""
             popup_html += f"""
             <hr>
-            <div style="color: orange; font-weight: bold;">⚠️ WARNING: This appears to be an anycast IP address{service_info}.</div>
+            <div style="color: orange; font-weight: bold;">⚠ WARNING: This appears to be an anycast IP address{service_info}.</div>
             <div style="color: orange;">Anycast IPs are announced from multiple locations worldwide.</div>
             <div style="color: orange;">The geolocation shown may not represent the actual server you're connecting to.</div>
             """
@@ -605,7 +605,7 @@ class IPGeolocation:
             <div style="position: fixed; bottom: 10px; left: 10px; z-index: 1000; 
                         background-color: rgba(255, 255, 255, 0.8); padding: 10px; border-radius: 5px; 
                         box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 300px;">
-                <strong style="color: orange;">⚠️ Anycast IP Warning</strong><br>
+                <strong style="color: orange;">⚠ Anycast IP Warning</strong><br>
                 This IP address is served from multiple physical locations worldwide.<br>
                 The shown location may not be the actual server responding to your requests.
             </div>
@@ -790,7 +790,7 @@ class IPGeolocation:
                         <div style="position: fixed; bottom: 10px; left: 10px; z-index: 1000; 
                                     background-color: rgba(255, 255, 255, 0.8); padding: 10px; border-radius: 5px; 
                                     box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 300px;">
-                            <strong style="color: orange;">⚠️ Anycast IP Warning</strong><br>
+                            <strong style="color: orange;">⚠ Anycast IP Warning</strong><br>
                             One or more hops on this route are anycast IPs, served from multiple physical locations worldwide.<br>
                             The shown locations may not represent the actual network path of your packets.
                         </div>
@@ -851,7 +851,7 @@ class IPGeolocation:
             service_info = f" ({known_service})" if known_service else ""
             popup_html += f"""
             <hr>
-            <div style="color: orange; font-weight: bold;">⚠️ WARNING: This appears to be an anycast IP address{service_info}.</div>
+            <div style="color: orange; font-weight: bold;">⚠ WARNING: This appears to be an anycast IP address{service_info}.</div>
             <div style="color: orange;">Anycast IPs are announced from multiple locations worldwide.</div>
             <div style="color: orange;">The geolocation shown may not represent the actual server location.</div>
             """
