@@ -79,12 +79,50 @@ python networkscanner.py --help
 python networkscanner.py scan --help
 ```
 
+## 🛠️ Repository Management
+
+For contributors and maintainers, this repository includes comprehensive management tools:
+
+### Management Dashboard
+```bash
+# Interactive repository dashboard
+python scripts/repo_dashboard.py
+
+# Static dashboard view
+python scripts/repo_dashboard.py --static
+```
+
+### Health Monitoring
+```bash
+# Comprehensive health check
+python scripts/repo_health_check.py
+
+# Repository maintenance
+python scripts/maintenance.py
+```
+
+### Version Management
+```bash
+# Automated version bumping and changelog updates
+python scripts/version_manager.py
+```
+
+### Automated Features
+- **GitHub Actions**: Automated testing across multiple platforms and Python versions
+- **Dependabot**: Automated dependency updates
+- **Security Scanning**: Automated security audits with safety and bandit
+- **Code Quality**: Automated formatting and linting checks
+
 ## Requirements
 
 - Python 3.8+
 - Windows, macOS, or Linux
 - Admin privileges for some features (optional)
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines and contribution instructions.
+
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
