@@ -34,3 +34,15 @@ build/
 
 # Logs
 *.log
+
+# IDE files
+*.swo
+# OS files
+Thumbs.db
+# Temporary files
+*.tmp
+*.temp
+*~
+# Test coverage
+.coverage
+htmlcov/
