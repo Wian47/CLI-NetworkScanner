@@ -1,0 +1,92 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run tests
+      run: |
+        python test_all_features.py
+    
+    - name: Extract version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+    
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Extract changelog for this version
+        if [ -f CHANGELOG.md ]; then
+          # Get changelog section for this version
+          awk '/^## \['"${{ steps.get_version.outputs.VERSION }}"'\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md > release_notes.md
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        else
+          echo "CHANGELOG=Release ${{ steps.get_version.outputs.VERSION }}" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ steps.get_version.outputs.VERSION }}
+        body: |
+          ## CLI Network Scanner v${{ steps.get_version.outputs.VERSION }}
+          
+          ${{ steps.changelog.outputs.CHANGELOG }}
+          
+          ### Installation
+          ```bash
+          git clone https://github.com/Wian47/CLI-NetworkScanner.git
+          cd CLI-NetworkScanner
+          pip install -r requirements.txt
+          python networkscanner.py
+          ```
+          
+          ### What's Changed
+          See [CHANGELOG.md](https://github.com/Wian47/CLI-NetworkScanner/blob/main/CHANGELOG.md) for detailed changes.
+          
+          ### Requirements
+          - Python 3.8+
+          - See requirements.txt for dependencies
+        draft: false
+        prerelease: false
+    
+    - name: Create distribution package
+      run: |
+        # Create a simple distribution
+        mkdir -p dist
+        zip -r dist/CLI-NetworkScanner-${{ steps.get_version.outputs.VERSION }}.zip . \
+          -x "*.git*" "*__pycache__*" "*.pyc" "dist/*" "*.db"
+    
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/CLI-NetworkScanner-${{ steps.get_version.outputs.VERSION }}.zip
+        asset_name: CLI-NetworkScanner-${{ steps.get_version.outputs.VERSION }}.zip
+        asset_content_type: application/zip
