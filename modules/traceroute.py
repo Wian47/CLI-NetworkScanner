@@ -30,13 +30,18 @@ class Traceroute:
         try:
             platform_name = platform.system()
             if platform_name == "Windows":
-                subprocess.run(["tracert", "-h", "1", "127.0.0.1"],
-                             capture_output=True, timeout=5)
+                # Test if tracert command exists and works
+                result = subprocess.run(["tracert", "-h", "1", "127.0.0.1"],
+                                      capture_output=True, timeout=10, text=True)
+                # Check if the command actually produced traceroute output
+                return "Tracing route" in result.stdout or result.returncode == 0
             else:
-                subprocess.run(["traceroute", "-m", "1", "127.0.0.1"],
-                             capture_output=True, timeout=5)
-            return True
-        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+                # Test if traceroute command exists and works
+                result = subprocess.run(["traceroute", "-m", "1", "127.0.0.1"],
+                                      capture_output=True, timeout=10, text=True)
+                # Check if the command actually produced traceroute output
+                return "traceroute to" in result.stdout or result.returncode == 0
+        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired, OSError):
             return False
         
     def _parse_windows_tracert(self, output: str) -> List[Dict[str, Any]]:
@@ -202,8 +207,10 @@ class Traceroute:
 
         # Choose implementation based on availability
         if self.use_system_traceroute:
+            self.console.print("[dim]Using system traceroute...[/dim]")
             hops = self._trace_system(target, max_hops)
         elif SCAPY_AVAILABLE:
+            self.console.print("[dim]Using Python/scapy traceroute...[/dim]")
             hops = self._trace_python(ip, max_hops)
         else:
             self.console.print("[bold red]Error: No traceroute implementation available[/bold red]")
@@ -211,14 +218,25 @@ class Traceroute:
 
         if hops:
             # Try to get ASN information for each hop
-            for hop in hops:
-                if hop["ip"] != "*":
-                    asn_info = self._get_asn_info(hop["ip"])
-                    hop["asn"] = asn_info["asn"]
-                    hop["isp"] = asn_info["isp"]
+            try:
+                for hop in hops:
+                    if hop["ip"] != "*":
+                        asn_info = self._get_asn_info(hop["ip"])
+                        hop["asn"] = asn_info["asn"]
+                        hop["isp"] = asn_info["isp"]
+            except Exception as e:
+                self.console.print(f"[yellow]Warning: Could not get ASN info: {str(e)}[/yellow]")
+                # Continue without ASN info
+                for hop in hops:
+                    if "asn" not in hop:
+                        hop["asn"] = "AS00000"
+                        hop["isp"] = "Unknown ISP"
 
             # Display results
-            self._display_results(target, hops)
+            try:
+                self._display_results(target, hops)
+            except Exception as e:
+                self.console.print(f"[bold red]Error displaying results: {str(e)}[/bold red]")
         else:
             self.console.print(f"[bold red]Error: Failed to perform traceroute to {target}[/bold red]")
 
@@ -247,10 +265,11 @@ class Traceroute:
                     output = subprocess.check_output(cmd, text=True)
                     return self._parse_linux_traceroute(output)
 
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError as e:
+            self.console.print(f"[yellow]System traceroute failed: {str(e)}[/yellow]")
             return []
         except Exception as e:
-            self.console.print(f"[bold red]Error: {str(e)}[/bold red]")
+            self.console.print(f"[yellow]System traceroute error: {str(e)}[/yellow]")
             return []
 
     def _trace_python(self, target_ip: str, max_hops: int) -> List[Dict[str, Any]]:
@@ -314,7 +333,7 @@ class Traceroute:
             self.console.print("[yellow]Note: scapy requires root privileges. Using simulated traceroute.[/yellow]")
             return self._simulate_traceroute(target_ip, max_hops)
         except Exception as e:
-            self.console.print(f"[bold red]Error in Python traceroute: {str(e)}[/bold red]")
+            self.console.print(f"[yellow]Python traceroute error: {str(e)}. Using simulated traceroute.[/yellow]")
             return self._simulate_traceroute(target_ip, max_hops)
 
         return hops
