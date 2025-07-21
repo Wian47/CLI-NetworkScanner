@@ -46,33 +46,30 @@ jobs:
         fi
     
     - name: Create Release
-      uses: actions/create-release@v1
+      id: create_release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ steps.get_version.outputs.VERSION }}
-        body: |
-          ## CLI Network Scanner v${{ steps.get_version.outputs.VERSION }}
-          
-          ${{ steps.changelog.outputs.CHANGELOG }}
-          
-          ### Installation
-          ```bash
-          git clone https://github.com/Wian47/CLI-NetworkScanner.git
-          cd CLI-NetworkScanner
-          pip install -r requirements.txt
-          python networkscanner.py
-          ```
-          
-          ### What's Changed
-          See [CHANGELOG.md](https://github.com/Wian47/CLI-NetworkScanner/blob/main/CHANGELOG.md) for detailed changes.
-          
-          ### Requirements
-          - Python 3.8+
-          - See requirements.txt for dependencies
-        draft: false
-        prerelease: false
+      run: |
+        gh release create ${{ github.ref_name }} \
+          --title "Release ${{ steps.get_version.outputs.VERSION }}" \
+          --notes "## CLI Network Scanner v${{ steps.get_version.outputs.VERSION }}
+
+        ${{ steps.changelog.outputs.CHANGELOG }}
+
+        ### Installation
+        \`\`\`bash
+        git clone https://github.com/Wian47/CLI-NetworkScanner.git
+        cd CLI-NetworkScanner
+        pip install -r requirements.txt
+        python networkscanner.py
+        \`\`\`
+
+        ### What's Changed
+        See [CHANGELOG.md](https://github.com/Wian47/CLI-NetworkScanner/blob/main/CHANGELOG.md) for detailed changes.
+
+        ### Requirements
+        - Python 3.8+
+        - See requirements.txt for dependencies"
     
     - name: Create distribution package
       run: |
@@ -82,11 +79,8 @@ jobs:
           -x "*.git*" "*__pycache__*" "*.pyc" "dist/*" "*.db"
     
     - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/CLI-NetworkScanner-${{ steps.get_version.outputs.VERSION }}.zip
-        asset_name: CLI-NetworkScanner-${{ steps.get_version.outputs.VERSION }}.zip
-        asset_content_type: application/zip
+      run: |
+        gh release upload ${{ github.ref_name }} \
+          ./dist/CLI-NetworkScanner-${{ steps.get_version.outputs.VERSION }}.zip
