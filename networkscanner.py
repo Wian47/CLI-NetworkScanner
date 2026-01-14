@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 import argparse
+import json
 import sys
 import time
 import platform
+import os
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt, IntPrompt, FloatPrompt, Confirm
 from rich.table import Table
 from rich import box
+
+# Import version info
+from __version__ import __version__, __title__, __description__
 
 # Import custom modules
 import history
@@ -24,10 +29,14 @@ from modules.ip_geolocation import IPGeolocation
 from modules.service_identification import ServiceIdentifier
 from modules.mac_address_changer import MACAddressChanger
 
-VERSION = "1.2.0"
+# For backwards compatibility
+VERSION = __version__
+
+# Global flags for output control
+QUIET_MODE = False
+JSON_OUTPUT = False
+
 # Initialize console with proper encoding for Windows compatibility
-import os
-import sys
 if os.name == 'nt':  # Windows
     # Force UTF-8 encoding on Windows to handle Unicode characters
     if hasattr(sys.stdout, 'reconfigure'):
@@ -1267,9 +1276,33 @@ def mac_address_changer_menu():
 
 def parse_arguments():
     """Parse command line arguments for direct CLI usage."""
-    parser = argparse.ArgumentParser(description='NetworkScan Pro - Advanced CLI Network Utility')
+    parser = argparse.ArgumentParser(
+        description='NetworkScan Pro - Advanced CLI Network Utility',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s scan google.com --ports 80,443
+  %(prog)s ping google.com --count 5
+  %(prog)s dns google.com --type mx
+  %(prog)s --json ping google.com --count 2
+  %(prog)s check
+        """
+    )
+    
+    # Global arguments
+    parser.add_argument('--version', '-V', action='version', 
+                       version=f'{__title__} v{__version__} - {__description__}')
+    parser.add_argument('--json', '-j', action='store_true',
+                       help='Output results in JSON format (where supported)')
+    parser.add_argument('--quiet', '-q', action='store_true',
+                       help='Suppress banner and decorative output')
 
     subparsers = parser.add_subparsers(dest='command', help='Command to run')
+
+    # Check/health command
+    check_parser = subparsers.add_parser('check', help='Check system dependencies and health')
+    check_parser.add_argument('--verbose', '-v', action='store_true', 
+                             help='Show detailed dependency information')
 
     # Port scanner arguments
     port_parser = subparsers.add_parser('scan', help='Port scanner')
@@ -1334,12 +1367,133 @@ def parse_arguments():
 
     return parser.parse_args()
 
+def check_system_health(verbose=False):
+    """Check system dependencies and report health status."""
+    global JSON_OUTPUT
+    
+    deps = {
+        "rich": {"required": True, "installed": False, "version": None},
+        "scapy": {"required": True, "installed": False, "version": None},
+        "dnspython": {"required": True, "installed": False, "version": None},
+        "requests": {"required": True, "installed": False, "version": None},
+        "psutil": {"required": True, "installed": False, "version": None},
+        "pyOpenSSL": {"required": True, "installed": False, "version": None},
+        "pythonping": {"required": True, "installed": False, "version": None},
+        "folium": {"required": False, "installed": False, "version": None},
+    }
+    
+    # Check each dependency
+    for dep_name in deps:
+        try:
+            if dep_name == "dnspython":
+                import dns
+                deps[dep_name]["installed"] = True
+                deps[dep_name]["version"] = getattr(dns, "__version__", "unknown")
+            elif dep_name == "pyOpenSSL":
+                import OpenSSL
+                deps[dep_name]["installed"] = True
+                deps[dep_name]["version"] = getattr(OpenSSL, "__version__", "unknown")
+            else:
+                mod = __import__(dep_name)
+                deps[dep_name]["installed"] = True
+                deps[dep_name]["version"] = getattr(mod, "__version__", "unknown")
+        except ImportError:
+            pass
+    
+    # Check system info
+    import socket
+    system_info = {
+        "platform": platform.system(),
+        "platform_version": platform.version(),
+        "python_version": platform.python_version(),
+        "hostname": socket.gethostname(),
+    }
+    
+    # Check admin privileges
+    is_admin = False
+    try:
+        if platform.system() == 'Windows':
+            import ctypes
+            is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+        else:
+            is_admin = os.geteuid() == 0
+    except:
+        pass
+    
+    system_info["admin_privileges"] = is_admin
+    
+    if JSON_OUTPUT:
+        result = {
+            "version": __version__,
+            "system": system_info,
+            "dependencies": deps,
+            "all_required_installed": all(d["installed"] for d in deps.values() if d["required"])
+        }
+        print(json.dumps(result, indent=2))
+    else:
+        # Display health check results
+        console.print(Panel(
+            f"[bold cyan]{__title__}[/bold cyan] v{__version__}",
+            title="System Health Check",
+            border_style="blue"
+        ))
+        
+        # System info table
+        sys_table = Table(title="System Information", box=box.ROUNDED)
+        sys_table.add_column("Property", style="cyan")
+        sys_table.add_column("Value", style="green")
+        
+        sys_table.add_row("Platform", f"{system_info['platform']} {system_info['platform_version']}")
+        sys_table.add_row("Python Version", system_info['python_version'])
+        sys_table.add_row("Hostname", system_info['hostname'])
+        admin_status = "[green]Yes[/green]" if is_admin else "[yellow]No[/yellow] (some features limited)"
+        sys_table.add_row("Admin Privileges", admin_status)
+        
+        console.print(sys_table)
+        
+        # Dependencies table
+        dep_table = Table(title="Dependencies", box=box.ROUNDED)
+        dep_table.add_column("Package", style="cyan")
+        dep_table.add_column("Required", style="dim")
+        dep_table.add_column("Status", style="green")
+        if verbose:
+            dep_table.add_column("Version", style="dim")
+        
+        for name, info in sorted(deps.items()):
+            req = "Yes" if info["required"] else "Optional"
+            status = "[green]✓ Installed[/green]" if info["installed"] else "[red]✗ Missing[/red]"
+            if verbose:
+                ver = info["version"] or "-"
+                dep_table.add_row(name, req, status, ver)
+            else:
+                dep_table.add_row(name, req, status)
+        
+        console.print(dep_table)
+        
+        # Overall status
+        all_required = all(d["installed"] for d in deps.values() if d["required"])
+        if all_required:
+            console.print("\n[bold green]✓ All required dependencies are installed.[/bold green]")
+        else:
+            missing = [n for n, d in deps.items() if d["required"] and not d["installed"]]
+            console.print(f"\n[bold red]✗ Missing required dependencies: {', '.join(missing)}[/bold red]")
+            console.print("[yellow]Run: pip install -r requirements.txt[/yellow]")
+
+
 def process_cli_arguments(args):
     """Process the command line arguments and run the appropriate function."""
+    global QUIET_MODE
+    
     if not args.command:
         # If no command specified, launch interactive menu
-        display_banner()
+        if not QUIET_MODE:
+            display_banner()
         main_menu()
+        return
+    
+    # Check/health command
+    if args.command == 'check':
+        check_system_health(verbose=getattr(args, 'verbose', False))
         return
 
     # Port scanner
@@ -1531,13 +1685,31 @@ def process_cli_arguments(args):
         display_banner()
         main_menu()
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the CLI application."""
+    global QUIET_MODE, JSON_OUTPUT
+    
     try:
         args = parse_arguments()
+        
+        # Handle global flags
+        if hasattr(args, 'quiet') and args.quiet:
+            QUIET_MODE = True
+        if hasattr(args, 'json') and args.json:
+            JSON_OUTPUT = True
+        
         process_cli_arguments(args)
     except KeyboardInterrupt:
-        console.print("\n[yellow]Program interrupted by user. Exiting...[/yellow]")
+        if not QUIET_MODE:
+            console.print("\n[yellow]Program interrupted by user. Exiting...[/yellow]")
         sys.exit(0)
     except Exception as e:
-        console.print(f"[bold red]Error: {str(e)}[/bold red]")
+        if JSON_OUTPUT:
+            print(json.dumps({"error": str(e)}, indent=2))
+        else:
+            console.print(f"[bold red]Error: {str(e)}[/bold red]")
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

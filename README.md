@@ -1,128 +1,194 @@
-# CLI Network Scanner
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/9438a168-d813-4c15-8558-897af4c056ef" alt="NetworkScan Pro" width="600">
+</p>
 
-A simple command-line network diagnostic tool for scanning ports, checking connectivity, and gathering network information.
+<h1 align="center">🌐 NetworkScan Pro</h1>
 
-![image](https://github.com/user-attachments/assets/9438a168-d813-4c15-8558-897af4c056ef)
+<p align="center">
+  <strong>A powerful command-line network diagnostic toolkit</strong>
+</p>
 
-## Features
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#usage">Usage</a> •
+  <a href="#contributing">Contributing</a>
+</p>
 
-- **Port Scanner** - Scan ports on target hosts
-- **Ping** - Test connectivity to hosts
-- **Traceroute** - Trace network path to destination
-- **DNS Tools** - Lookup DNS records (A, MX, TXT, etc.)
-- **Network Info** - Show local and public IP information
-- **Device Discovery** - Find devices on your network
-- **SSL Checker** - Verify SSL certificates
-- **IP Geolocation** - Get location info for IP addresses
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python 3.8+">
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg" alt="Platform">
+  <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License">
+  <img src="https://img.shields.io/badge/version-1.3.0-orange.svg" alt="Version">
+</p>
 
-## Quick Start
+---
 
-1. **Install Python 3.8+**
+## ✨ Features
 
-2. **Clone and install:**
-   ```bash
-   git clone https://github.com/Wian47/CLI-NetworkScanner.git
-   cd CLI-NetworkScanner
-   pip install -r requirements.txt
-   ```
+| Feature | Description |
+|---------|-------------|
+| 🔍 **Port Scanner** | TCP connect, SYN stealth, and advanced scan modes |
+| 📶 **Ping Utility** | Test connectivity with detailed statistics |
+| 🌐 **Traceroute** | Map the network path to any destination |
+| 🔖 **DNS Tools** | Lookup A, MX, TXT, NS records and more |
+| 📊 **Network Info** | View local interfaces and public IP details |
+| 🔎 **Device Discovery** | Find all devices on your local network |
+| 📈 **Bandwidth Monitor** | Real-time upload/download tracking |
+| 🔒 **SSL Checker** | Verify certificates, expiry dates, and chain |
+| 🌍 **IP Geolocation** | Map IPs to physical locations with interactive maps |
+| 🛡️ **Vulnerability Scanner** | Detect known service vulnerabilities |
+| 📱 **MAC Changer** | Change network interface MAC addresses |
 
-3. **Run:**
-   ```bash
-   python networkscanner.py
-   ```
+---
 
-## Usage Examples
+## 🚀 Installation
 
-**Port Scanning:**
+### Quick Install (Recommended)
+
 ```bash
-python networkscanner.py scan google.com --ports 80,443
-python networkscanner.py scan 192.168.1.1 --common
+git clone https://github.com/Wian47/CLI-NetworkScanner.git
+cd CLI-NetworkScanner
+pip install -e .
 ```
 
-**Ping:**
+Now use `netscan` from anywhere:
+
 ```bash
-python networkscanner.py ping google.com --count 5
+netscan --version
+netscan check        # Verify system dependencies
+netscan --help       # See all commands
 ```
 
-**DNS Lookup:**
+### Manual Run
+
 ```bash
-python networkscanner.py dns google.com --type a
-python networkscanner.py dns google.com --type mx
+git clone https://github.com/Wian47/CLI-NetworkScanner.git
+cd CLI-NetworkScanner
+pip install -r requirements.txt
+python networkscanner.py
 ```
 
-**Network Info:**
+---
+
+## 📖 Usage
+
+### Port Scanning
+
 ```bash
-python networkscanner.py netinfo --type local
-python networkscanner.py netinfo --type public
+# Scan specific ports
+netscan scan google.com --ports 80,443,8080
+
+# Scan common ports
+netscan scan 192.168.1.1 --common
+
+# Scan a range
+netscan scan target.com --ports 20-100
 ```
 
-**SSL Check:**
+### Network Diagnostics
+
 ```bash
-python networkscanner.py ssl google.com
+# Ping with custom count
+netscan ping google.com --count 10
+
+# Trace route to destination
+netscan trace cloudflare.com --max-hops 20
+
+# DNS lookups
+netscan dns example.com --type mx
+netscan dns example.com --type txt
 ```
 
-**IP Location:**
+### Network Discovery
+
 ```bash
-python networkscanner.py geoip 8.8.8.8
+# Find devices on your network
+netscan discover
+
+# Get local network info
+netscan netinfo --type local
+
+# Get public IP info
+netscan netinfo --type public
 ```
 
-**Find Devices:**
+### Security Tools
+
 ```bash
-python networkscanner.py discover
+# Check SSL certificate
+netscan ssl github.com
+
+# IP geolocation
+netscan geoip 8.8.8.8
+
+# Geolocation with interactive map
+netscan geoip 1.1.1.1 --output map.html --open
 ```
 
-## Help
+### Output Options
 
-Get help for any command:
 ```bash
-python networkscanner.py --help
-python networkscanner.py scan --help
+# JSON output for scripting
+netscan --json check
+netscan --json ping google.com --count 2
+
+# Quiet mode (no banner)
+netscan --quiet ping google.com
 ```
 
-## 🛠️ Repository Management
+---
 
-For contributors and maintainers, this repository includes comprehensive management tools:
+## 🛠️ For Developers
 
-### Management Dashboard
+<details>
+<summary><strong>Repository Management Tools</strong></summary>
+
 ```bash
-# Interactive repository dashboard
+# Interactive dashboard
 python scripts/repo_dashboard.py
 
-# Static dashboard view
-python scripts/repo_dashboard.py --static
-```
-
-### Health Monitoring
-```bash
-# Comprehensive health check
+# Health check
 python scripts/repo_health_check.py
 
-# Repository maintenance
-python scripts/maintenance.py
-```
-
-### Version Management
-```bash
-# Automated version bumping and changelog updates
+# Version management
 python scripts/version_manager.py
 ```
 
-### Automated Features
-- **GitHub Actions**: Automated testing across multiple platforms and Python versions
-- **Dependabot**: Automated dependency updates
-- **Security Scanning**: Automated security audits with safety and bandit
-- **Code Quality**: Automated formatting and linting checks
+</details>
 
-## Requirements
+<details>
+<summary><strong>Automated CI/CD</strong></summary>
 
-- Python 3.8+
-- Windows, macOS, or Linux
-- Admin privileges for some features (optional)
+- **GitHub Actions** - Multi-platform testing (Windows, macOS, Linux)
+- **Dependabot** - Automated dependency updates
+- **Security Scanning** - Bandit and safety audits
+- **Code Quality** - Automated linting and formatting
 
-## Contributing
+</details>
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines and contribution instructions.
+---
 
-## License
+## 📋 Requirements
 
-MIT License - see [LICENSE](LICENSE) file for details.
+- **Python** 3.8 or higher
+- **Platform**: Windows, macOS, or Linux
+- **Optional**: Admin/root privileges for advanced scanning features
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<p align="center">
+  Made with ❤️ for network administrators and security enthusiasts
+</p>

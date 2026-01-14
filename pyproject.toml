@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "networkscan-pro"
+dynamic = ["version"]
+description = "Advanced CLI Network Diagnostics Tool"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    {name = "Wian"}
+]
+keywords = ["network", "scanner", "ping", "traceroute", "dns", "ssl", "security", "cli"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Networking",
+    "Topic :: System :: Networking :: Monitoring",
+]
+
+dependencies = [
+    "rich>=12.0.0",
+    "pythonping>=1.1.0",
+    "scapy>=2.4.5",
+    "dnspython>=2.2.0",
+    "requests>=2.26.0",
+    "psutil>=5.9.0",
+    "pyOpenSSL>=22.0.0",
+    "folium>=0.14.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.2.5",
+    "black",
+    "flake8",
+]
+
+[project.urls]
+Homepage = "https://github.com/Wian47/CLI-NetworkScanner"
+Repository = "https://github.com/Wian47/CLI-NetworkScanner"
+Issues = "https://github.com/Wian47/CLI-NetworkScanner/issues"
+
+[project.scripts]
+netscan = "networkscanner:main"
+networkscan = "networkscanner:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "__version__.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["modules*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py38", "py39", "py310", "py311", "py312"]
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+python_files = ["test_*.py"]
