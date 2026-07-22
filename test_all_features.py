@@ -13,7 +13,7 @@ from rich.panel import Panel
 
 console = Console()
 
-def run_command(cmd, timeout=30):
+def run_command(cmd, timeout=45):
     """Run a command and return success status and output"""
     try:
         result = subprocess.run(

@@ -254,14 +254,18 @@ class Traceroute:
                 task_id = progress.add_task("Tracing...", target=target)
 
                 if platform_name == "Windows":
-                    # On Windows, use tracert
-                    cmd = ["powershell", "-Command", f"tracert -d -h {max_hops} {target}"]
-                    output = subprocess.check_output(cmd, text=True)
+                    # On Windows, use tracert. -w caps the per-probe wait to
+                    # 1s (default is 4s); with 3 probes/hop and several
+                    # non-responding hops, the default can make a trace take
+                    # a minute or more.
+                    cmd = ["powershell", "-Command", f"tracert -d -h {max_hops} -w 1000 {target}"]
+                    output = subprocess.check_output(cmd, text=True, timeout=60)
                     return self._parse_windows_tracert(output)
                 else:
-                    # On Linux/Mac, use traceroute
-                    cmd = ["traceroute", "-n", "-m", str(max_hops), target]
-                    output = subprocess.check_output(cmd, text=True)
+                    # On Linux/Mac, use traceroute. -w matches the same
+                    # per-probe wait cap for consistent worst-case timing.
+                    cmd = ["traceroute", "-n", "-m", str(max_hops), "-w", "1", target]
+                    output = subprocess.check_output(cmd, text=True, timeout=60)
                     return self._parse_linux_traceroute(output)
 
         except subprocess.CalledProcessError as e:
