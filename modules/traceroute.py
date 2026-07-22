@@ -128,25 +128,24 @@ class Traceroute:
             hop_num = int(hop_match.group(1))
             
             # Extract hostname/IP
+            # Format with reverse DNS: "1  host.name (1.2.3.4)  1.234 ms ..."
             name_ip_match = re.search(r'^\s*\d+\s+([^\s]+)\s+\(([\d\.]+)\)', line)
-            
+            # Numeric-only format (traceroute -n): "1  1.2.3.4  1.234 ms ..."
+            numeric_ip_match = re.search(r'^\s*\d+\s+(\d+\.\d+\.\d+\.\d+)\b', line)
+
             if name_ip_match:
                 hostname = name_ip_match.group(1)
                 ip = name_ip_match.group(2)
+            elif numeric_ip_match:
+                ip = numeric_ip_match.group(1)
+                hostname = ip
+            elif "*" in line:
+                # Timed out hop, no response
+                hostname = "*"
+                ip = "*"
             else:
-                # Check for timeout
-                if "*" in line:
-                    hostname = "*"
-                    ip = "*"
-                else:
-                    # Just IP, no hostname
-                    ip_match = re.search(r'^\s*\d+\s+\(([\d\.]+)\)', line)
-                    if ip_match:
-                        ip = ip_match.group(1)
-                        hostname = ip
-                    else:
-                        # Could not parse, skip this line
-                        continue
+                # Could not parse, skip this line
+                continue
                         
             # Extract RTTs
             rtts = re.findall(r'([\d\.]+) ms', line)

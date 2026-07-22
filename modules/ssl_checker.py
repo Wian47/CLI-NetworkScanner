@@ -1,7 +1,10 @@
 import ssl
 import socket
 import datetime
-import OpenSSL
+from cryptography import x509 as cryptography_x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import rsa, dsa, ec
+from cryptography.x509.oid import ExtensionOID, AuthorityInformationAccessOID, NameOID
 from typing import Dict, List, Optional, Tuple, Any
 from rich.console import Console
 from rich.table import Table
@@ -14,20 +17,60 @@ import ipaddress
 
 class SSLCertificateChecker:
     """SSL/TLS Certificate checking module for NetworkScan Pro."""
-    
+
+    # Short names for common X.509 name attributes, matching the
+    # conventional RFC 4514 abbreviations.
+    _NAME_OID_SHORT_NAMES = {
+        NameOID.COMMON_NAME: b'CN',
+        NameOID.COUNTRY_NAME: b'C',
+        NameOID.LOCALITY_NAME: b'L',
+        NameOID.STATE_OR_PROVINCE_NAME: b'ST',
+        NameOID.ORGANIZATION_NAME: b'O',
+        NameOID.ORGANIZATIONAL_UNIT_NAME: b'OU',
+        NameOID.EMAIL_ADDRESS: b'emailAddress',
+        NameOID.SERIAL_NUMBER: b'serialNumber',
+        NameOID.SURNAME: b'SN',
+        NameOID.GIVEN_NAME: b'GN',
+    }
+
     def __init__(self, console: Console = None):
         """Initialize the SSL Certificate Checker."""
         self.console = console or Console()
-        
+
+    def _name_to_dict(self, name: cryptography_x509.Name) -> Dict[bytes, bytes]:
+        """Convert a cryptography X.509 Name into a {short_name: value} byte dict."""
+        result = {}
+        for attribute in name:
+            key = self._NAME_OID_SHORT_NAMES.get(attribute.oid)
+            if key is None:
+                oid_name = getattr(attribute.oid, '_name', None) or attribute.oid.dotted_string
+                key = oid_name.encode('utf-8')
+            value = attribute.value
+            if isinstance(value, str):
+                value = value.encode('utf-8')
+            result[key] = value
+        return result
+
+    def _get_public_key_info(self, public_key) -> Tuple[str, int]:
+        """Determine the public key type and size in bits."""
+        if isinstance(public_key, rsa.RSAPublicKey):
+            return 'RSA', public_key.key_size
+        elif isinstance(public_key, dsa.DSAPublicKey):
+            return 'DSA', public_key.key_size
+        elif isinstance(public_key, ec.EllipticCurvePublicKey):
+            return 'EC', public_key.key_size
+        else:
+            return f"Unknown ({type(public_key).__name__})", getattr(public_key, 'key_size', 0)
+
     def get_certificate(self, hostname: str, port: int = 443, timeout: int = 10) -> Dict:
         """
         Fetch SSL certificate from a host.
-        
+
         Args:
             hostname: Target hostname or IP
             port: Target port (default 443)
             timeout: Connection timeout in seconds
-            
+
         Returns:
             Dictionary with certificate details or error
         """
@@ -36,53 +79,55 @@ class SSLCertificateChecker:
             context = ssl.create_default_context()
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
-            
+
             with socket.create_connection((hostname, port), timeout=timeout) as sock:
                 with context.wrap_socket(sock, server_hostname=hostname) as ssl_sock:
                     # Get certificate in DER format
                     der_cert = ssl_sock.getpeercert(True)
-                    # Convert to PEM format for OpenSSL
-                    x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_ASN1, der_cert)
-                    
+                    cert = cryptography_x509.load_der_x509_certificate(der_cert)
+
                     # Get SSL/TLS version
                     ssl_version = ssl_sock.version()
-                    
+
                     # Get cipher information
                     cipher = ssl_sock.cipher()
-                    
+
                     # Get certificate chain (simplified - we can't easily get the entire chain)
                     # In a production app, you'd use a different approach to get the full chain
                     chain_length = 1
-                    
+
+                    public_key_type, public_key_bits = self._get_public_key_info(cert.public_key())
+
                     # Extract and format important details
                     cert_data = {
-                        'subject': dict(x509.get_subject().get_components()),
-                        'issuer': dict(x509.get_issuer().get_components()),
-                        'version': x509.get_version(),
-                        'serialNumber': x509.get_serial_number(),
-                        'notBefore': datetime.datetime.strptime(x509.get_notBefore().decode('ascii'), '%Y%m%d%H%M%SZ'),
-                        'notAfter': datetime.datetime.strptime(x509.get_notAfter().decode('ascii'), '%Y%m%d%H%M%SZ'),
-                        'subjectAltName': self._get_alt_names(x509),
-                        'OCSP': self._get_ocsp_uri(x509),
-                        'caIssuers': self._get_ca_issuers(x509),
-                        'crlDistributionPoints': self._get_crl_distribution_points(x509),
-                        'keyUsage': self._get_key_usage(x509),
-                        'extendedKeyUsage': self._get_extended_key_usage(x509),
-                        'signatureAlgorithm': x509.get_signature_algorithm().decode('ascii'),
-                        'fingerprint': x509.digest('sha256').decode('ascii'),
-                        'publicKeyBits': x509.get_pubkey().bits(),
-                        'publicKeyType': self._get_public_key_type(x509),
+                        'subject': self._name_to_dict(cert.subject),
+                        'issuer': self._name_to_dict(cert.issuer),
+                        'version': cert.version.value,
+                        'serialNumber': cert.serial_number,
+                        'notBefore': cert.not_valid_before_utc.replace(tzinfo=None),
+                        'notAfter': cert.not_valid_after_utc.replace(tzinfo=None),
+                        'subjectAltName': self._get_alt_names(cert),
+                        'OCSP': self._get_ocsp_uri(cert),
+                        'caIssuers': self._get_ca_issuers(cert),
+                        'crlDistributionPoints': self._get_crl_distribution_points(cert),
+                        'keyUsage': self._get_key_usage(cert),
+                        'extendedKeyUsage': self._get_extended_key_usage(cert),
+                        'signatureAlgorithm': getattr(cert.signature_algorithm_oid, '_name', None)
+                            or cert.signature_algorithm_oid.dotted_string,
+                        'fingerprint': cert.fingerprint(hashes.SHA256()).hex(),
+                        'publicKeyBits': public_key_bits,
+                        'publicKeyType': public_key_type,
                         'chain_length': chain_length,
                         'ssl_version': ssl_version,
                         'cipher': cipher
                     }
-                    
+
                     return {
                         'success': True,
                         'cert_data': cert_data,
-                        'raw_cert': x509
+                        'raw_cert': cert
                     }
-                    
+
         except (socket.gaierror, socket.error) as e:
             return {
                 'success': False,
@@ -99,86 +144,106 @@ class SSLCertificateChecker:
                 'error': f"Error: {str(e)}"
             }
     
-    def _get_alt_names(self, cert: OpenSSL.crypto.X509) -> List[str]:
+    def _get_alt_names(self, cert: cryptography_x509.Certificate) -> List[str]:
         """Extract Subject Alternative Names from certificate."""
         alt_names = []
-        for i in range(cert.get_extension_count()):
-            ext = cert.get_extension(i)
-            if ext.get_short_name() == b'subjectAltName':
-                alt_names_str = str(ext)
-                # Parse the alt names string
-                for name in alt_names_str.split(', '):
-                    if ':' in name:
-                        type_val = name.split(':', 1)
-                        if len(type_val) == 2:
-                            alt_names.append(name)
+        try:
+            ext = cert.extensions.get_extension_for_oid(
+                ExtensionOID.SUBJECT_ALTERNATIVE_NAME
+            )
+            for name in ext.value:
+                if isinstance(name, cryptography_x509.DNSName):
+                    alt_names.append(f"DNS:{name.value}")
+                elif isinstance(name, cryptography_x509.IPAddress):
+                    alt_names.append(f"IP Address:{name.value}")
+        except cryptography_x509.ExtensionNotFound:
+            pass
         return alt_names
-    
-    def _get_ocsp_uri(self, cert: OpenSSL.crypto.X509) -> Optional[str]:
+
+    def _get_ocsp_uri(self, cert: cryptography_x509.Certificate) -> Optional[str]:
         """Extract OCSP URI from certificate."""
-        for i in range(cert.get_extension_count()):
-            ext = cert.get_extension(i)
-            if ext.get_short_name() == b'authorityInfoAccess':
-                aia_str = str(ext)
-                for line in aia_str.split('\n'):
-                    if 'OCSP' in line and 'URI:' in line:
-                        uri = line.split('URI:', 1)[1].strip()
-                        return uri
+        try:
+            ext = cert.extensions.get_extension_for_oid(
+                ExtensionOID.AUTHORITY_INFORMATION_ACCESS
+            )
+            for description in ext.value:
+                if description.access_method == AuthorityInformationAccessOID.OCSP:
+                    return description.access_location.value
+        except cryptography_x509.ExtensionNotFound:
+            pass
         return None
-    
-    def _get_ca_issuers(self, cert: OpenSSL.crypto.X509) -> List[str]:
+
+    def _get_ca_issuers(self, cert: cryptography_x509.Certificate) -> List[str]:
         """Extract CA Issuers from certificate."""
         issuers = []
-        for i in range(cert.get_extension_count()):
-            ext = cert.get_extension(i)
-            if ext.get_short_name() == b'authorityInfoAccess':
-                aia_str = str(ext)
-                for line in aia_str.split('\n'):
-                    if 'CA Issuers' in line and 'URI:' in line:
-                        uri = line.split('URI:', 1)[1].strip()
-                        issuers.append(uri)
+        try:
+            ext = cert.extensions.get_extension_for_oid(
+                ExtensionOID.AUTHORITY_INFORMATION_ACCESS
+            )
+            for description in ext.value:
+                if description.access_method == AuthorityInformationAccessOID.CA_ISSUERS:
+                    issuers.append(description.access_location.value)
+        except cryptography_x509.ExtensionNotFound:
+            pass
         return issuers
-    
-    def _get_crl_distribution_points(self, cert: OpenSSL.crypto.X509) -> List[str]:
+
+    def _get_crl_distribution_points(self, cert: cryptography_x509.Certificate) -> List[str]:
         """Extract CRL Distribution Points from certificate."""
         crls = []
-        for i in range(cert.get_extension_count()):
-            ext = cert.get_extension(i)
-            if ext.get_short_name() == b'crlDistributionPoints':
-                crl_str = str(ext)
-                for line in crl_str.split('\n'):
-                    if 'URI:' in line:
-                        uri = line.split('URI:', 1)[1].strip()
-                        crls.append(uri)
+        try:
+            ext = cert.extensions.get_extension_for_oid(
+                ExtensionOID.CRL_DISTRIBUTION_POINTS
+            )
+            for point in ext.value:
+                if point.full_name:
+                    for name in point.full_name:
+                        if isinstance(name, cryptography_x509.UniformResourceIdentifier):
+                            crls.append(name.value)
+        except cryptography_x509.ExtensionNotFound:
+            pass
         return crls
-    
-    def _get_key_usage(self, cert: OpenSSL.crypto.X509) -> List[str]:
+
+    def _get_key_usage(self, cert: cryptography_x509.Certificate) -> List[str]:
         """Extract Key Usage from certificate."""
-        for i in range(cert.get_extension_count()):
-            ext = cert.get_extension(i)
-            if ext.get_short_name() == b'keyUsage':
-                return str(ext).split(', ')
-        return []
-    
-    def _get_extended_key_usage(self, cert: OpenSSL.crypto.X509) -> List[str]:
+        labels = {
+            'digital_signature': 'Digital Signature',
+            'content_commitment': 'Non Repudiation',
+            'key_encipherment': 'Key Encipherment',
+            'data_encipherment': 'Data Encipherment',
+            'key_agreement': 'Key Agreement',
+            'key_cert_sign': 'Certificate Sign',
+            'crl_sign': 'CRL Sign',
+            'encipher_only': 'Encipher Only',
+            'decipher_only': 'Decipher Only',
+        }
+        usages = []
+        try:
+            ku = cert.extensions.get_extension_for_oid(
+                ExtensionOID.KEY_USAGE
+            ).value
+            for attr, label in labels.items():
+                try:
+                    if getattr(ku, attr):
+                        usages.append(label)
+                except ValueError:
+                    # encipher_only/decipher_only only valid when key_agreement is set
+                    continue
+        except cryptography_x509.ExtensionNotFound:
+            pass
+        return usages
+
+    def _get_extended_key_usage(self, cert: cryptography_x509.Certificate) -> List[str]:
         """Extract Extended Key Usage from certificate."""
-        for i in range(cert.get_extension_count()):
-            ext = cert.get_extension(i)
-            if ext.get_short_name() == b'extendedKeyUsage':
-                return str(ext).split(', ')
-        return []
-    
-    def _get_public_key_type(self, cert: OpenSSL.crypto.X509) -> str:
-        """Determine the public key type."""
-        pk_type = cert.get_pubkey().type()
-        if pk_type == OpenSSL.crypto.TYPE_RSA:
-            return 'RSA'
-        elif pk_type == OpenSSL.crypto.TYPE_DSA:
-            return 'DSA'
-        elif pk_type == OpenSSL.crypto.TYPE_EC:
-            return 'EC'
-        else:
-            return f"Unknown ({pk_type})"
+        usages = []
+        try:
+            eku = cert.extensions.get_extension_for_oid(
+                ExtensionOID.EXTENDED_KEY_USAGE
+            ).value
+            for oid in eku:
+                usages.append(getattr(oid, '_name', None) or oid.dotted_string)
+        except cryptography_x509.ExtensionNotFound:
+            pass
+        return usages
     
     def check_expiration(self, cert_data: Dict) -> Dict:
         """
@@ -194,7 +259,7 @@ class SSLCertificateChecker:
             return {'valid': False, 'reason': 'Certificate data missing'}
         
         cert = cert_data['cert_data']
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
         not_before = cert['notBefore']
         not_after = cert['notAfter']
         days_to_expiration = (not_after - now).days

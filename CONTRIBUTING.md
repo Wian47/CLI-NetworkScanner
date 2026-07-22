@@ -5,7 +5,7 @@ Thank you for your interest in contributing to the CLI Network Scanner! This doc
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.8 or higher
+- Python 3.10 or higher
 - Git
 - Basic understanding of networking concepts
 

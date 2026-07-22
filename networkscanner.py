@@ -1377,7 +1377,7 @@ def check_system_health(verbose=False):
         "dnspython": {"required": True, "installed": False, "version": None},
         "requests": {"required": True, "installed": False, "version": None},
         "psutil": {"required": True, "installed": False, "version": None},
-        "pyOpenSSL": {"required": True, "installed": False, "version": None},
+        "cryptography": {"required": True, "installed": False, "version": None},
         "pythonping": {"required": True, "installed": False, "version": None},
         "folium": {"required": False, "installed": False, "version": None},
     }
@@ -1389,10 +1389,10 @@ def check_system_health(verbose=False):
                 import dns
                 deps[dep_name]["installed"] = True
                 deps[dep_name]["version"] = getattr(dns, "__version__", "unknown")
-            elif dep_name == "pyOpenSSL":
-                import OpenSSL
+            elif dep_name == "cryptography":
+                import cryptography
                 deps[dep_name]["installed"] = True
-                deps[dep_name]["version"] = getattr(OpenSSL, "__version__", "unknown")
+                deps[dep_name]["version"] = getattr(cryptography, "__version__", "unknown")
             else:
                 mod = __import__(dep_name)
                 deps[dep_name]["installed"] = True

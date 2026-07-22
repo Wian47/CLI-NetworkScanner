@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **SSL Certificate Checker**: Fixed crash on modern pyOpenSSL versions where `X509.get_extension()` was removed, breaking SAN/OCSP/CRL/key-usage parsing
+- **Traceroute**: Fixed system traceroute output parser not recognizing the numeric (`-n`) IP-only format, which caused every trace to report zero hops
+
+### Changed
+- **SSL Certificate Checker**: Migrated from the deprecated pyOpenSSL `X509` API to the `cryptography` library directly, removing the `pyOpenSSL` dependency in favor of `cryptography>=42.0.0`
+- Replaced `datetime.utcnow()` (deprecated) with a timezone-aware equivalent in the SSL expiration check
+- Dropped CI/support for Python 3.8 and 3.9 (both end-of-life); test matrix now covers 3.10–3.14
+- Updated GitHub Actions (`actions/checkout`, `actions/setup-python`, `actions/cache`) to their current major versions
+
 ## [1.3.0] - 2025-01-14
 
 ### Added

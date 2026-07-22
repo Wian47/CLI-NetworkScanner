@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python 3.8+">
+  <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg" alt="Platform">
   <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License">
   <img src="https://img.shields.io/badge/version-1.3.0-orange.svg" alt="Version">
@@ -171,7 +171,7 @@ python scripts/version_manager.py
 
 ## 📋 Requirements
 
-- **Python** 3.8 or higher
+- **Python** 3.10 or higher
 - **Platform**: Windows, macOS, or Linux
 - **Optional**: Admin/root privileges for advanced scanning features
 
