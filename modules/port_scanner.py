@@ -48,7 +48,7 @@ class PortScanner:
         self._fragment_packets = False
         self._spoof_mac = None
         self._source_port = None
-        self._timeout = 1.0
+        self._timeout = 1.5
         self._max_retries = 1
         self._scan_delay = 0.0
         self._ttl = 64
@@ -690,7 +690,7 @@ class PortScanner:
 
         # Create socket
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(1.5)  # Shorter timeout for faster scanning
+        s.settimeout(self._timeout)
 
         try:
             # Try to connect to the port
@@ -759,7 +759,7 @@ class PortScanner:
 
             # Send SYN packet
             packet = IP(dst=ip)/TCP(dport=port, flags="S")
-            response = sr1(packet, timeout=1.5)
+            response = sr1(packet, timeout=self._timeout)
 
             # Process the response
             if response is None:

@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **SSL Certificate Checker**: Fixed crash on modern pyOpenSSL versions where `X509.get_extension()` was removed, breaking SAN/OCSP/CRL/key-usage parsing
 - **Traceroute**: Fixed system traceroute output parser not recognizing the numeric (`-n`) IP-only format, which caused every trace to report zero hops
+- **History**: Fixed a `SyntaxError` on Python 3.10/3.11 caused by an f-string reusing its own quote character in a nested dict-key lookup (only legal on 3.12+), which broke module import entirely on those versions
+- **Port Scanner**: Added a working `--timeout` CLI flag (previously unrecognized by argparse, causing every CI run to fail); the interactively-configured scan timeout is now actually applied to connect/SYN scans instead of being silently ignored
 
 ### Changed
 - **SSL Certificate Checker**: Migrated from the deprecated pyOpenSSL `X509` API to the `cryptography` library directly, removing the `pyOpenSSL` dependency in favor of `cryptography>=42.0.0`

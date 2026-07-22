@@ -1309,6 +1309,7 @@ Examples:
     port_parser.add_argument('target', help='Target IP or hostname')
     port_parser.add_argument('--ports', '-p', help='Ports to scan (e.g., 80,443 or 20-25)')
     port_parser.add_argument('--common', '-c', action='store_true', help='Scan common ports')
+    port_parser.add_argument('--timeout', type=float, help='Connection timeout in seconds (default: 1.5)')
 
     # Ping arguments
     ping_parser = subparsers.add_parser('ping', help='Ping utility')
@@ -1499,6 +1500,8 @@ def process_cli_arguments(args):
     # Port scanner
     if args.command == 'scan':
         scanner = PortScanner(console)
+        if args.timeout:
+            scanner._timeout = args.timeout
         ports = []
 
         if args.common:
