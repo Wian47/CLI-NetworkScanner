@@ -104,14 +104,17 @@ class PingUtility:
                 
         else:  # Linux/Mac
             # Find sent/received/loss
-            stats_match = re.search(r"(\d+) packets transmitted, (\d+) received, (\d+\.?\d*)% packet loss", output)
+            # Linux (iputils): "1 packets transmitted, 1 received, 0% packet loss"
+            # macOS/BSD:        "1 packets transmitted, 1 packets received, 0.0% packet loss"
+            stats_match = re.search(r"(\d+) packets transmitted, (\d+)(?: packets)? received, (\d+\.?\d*)% packet loss", output)
             if stats_match:
                 result["sent"] = int(stats_match.group(1))
                 result["received"] = int(stats_match.group(2))
                 result["loss"] = float(stats_match.group(3))
                 
             # Find min/avg/max times
-            times_match = re.search(r"min/avg/max(?:/mdev)? = (\d+\.?\d*)/(\d+\.?\d*)/(\d+\.?\d*)", output)
+            # Linux (iputils) suffixes with /mdev, macOS/BSD with /stddev
+            times_match = re.search(r"min/avg/max(?:/(?:mdev|stddev))? = (\d+\.?\d*)/(\d+\.?\d*)/(\d+\.?\d*)", output)
             if times_match:
                 result["min_time"] = float(times_match.group(1))
                 result["avg_time"] = float(times_match.group(2))
