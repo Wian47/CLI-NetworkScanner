@@ -79,8 +79,9 @@ def main():
         ("Port Scanner - Basic", "python networkscanner.py scan google.com --ports 80,443", 
          ["Scan Results", "open", "google.com"]),
         
-        # Ping Utility
-        ("Ping Utility", "python networkscanner.py ping google.com --count 2", 
+        # Ping Utility (uses loopback: outbound ICMP to public hosts is
+        # unreliable/rate-limited on many CI runners)
+        ("Ping Utility", "python networkscanner.py ping 127.0.0.1 --count 2",
          ["Ping Results", "Packets Sent", "reachable"]),
         
         # Traceroute

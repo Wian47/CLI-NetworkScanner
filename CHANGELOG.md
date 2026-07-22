@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **History**: Fixed a `SyntaxError` on Python 3.10/3.11 caused by an f-string reusing its own quote character in a nested dict-key lookup (only legal on 3.12+), which broke module import entirely on those versions
 - **Port Scanner**: Added a working `--timeout` CLI flag (previously unrecognized by argparse, causing every CI run to fail); the interactively-configured scan timeout is now actually applied to connect/SYN scans instead of being silently ignored
 - **CI (Windows)**: Fixed `UnicodeEncodeError` crashes on `windows-latest` runners — Rich's legacy Windows console writer uses `sys.stdout.encoding`, which defaults to a legacy ANSI codepage (e.g. `cp1252`) that can't encode the checkmarks/box-drawing characters used throughout the CLI's output. Set `PYTHONUTF8=1` for the test job
+- **CI (flaky ping test)**: The ping feature test targeted `google.com` over ICMP, which is unreliable/rate-limited on shared CI infrastructure and intermittently failed across ubuntu/macos/windows runners with no code-level cause. Switched the test target to `127.0.0.1`, matching the same rationale already used for the port-scan CI step
 
 ### Changed
 - **SSL Certificate Checker**: Migrated from the deprecated pyOpenSSL `X509` API to the `cryptography` library directly, removing the `pyOpenSSL` dependency in favor of `cryptography>=42.0.0`
