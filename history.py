@@ -378,12 +378,16 @@ def display_geolocation_results(db, scan_id):
     console.print("[bold]Geolocation Results:[/bold]")
 
     for result in results:
+        latitude = result['latitude']
+        longitude = result['longitude']
+        coordinates = f"{latitude}, {longitude}" if latitude and longitude else 'N/A'
+
         panel = Panel(
             f"[cyan]IP Address:[/cyan] {result['ip_address']}\n"
             f"[cyan]Country:[/cyan] {result['country'] or 'N/A'}\n"
             f"[cyan]Region:[/cyan] {result['region'] or 'N/A'}\n"
             f"[cyan]City:[/cyan] {result['city'] or 'N/A'}\n"
-            f"[cyan]Coordinates:[/cyan] {f'{result['latitude']}, {result['longitude']}' if result['latitude'] and result['longitude'] else 'N/A'}\n"
+            f"[cyan]Coordinates:[/cyan] {coordinates}\n"
             f"[cyan]ISP:[/cyan] {result['isp'] or 'N/A'}\n",
             title=f"Geolocation for {result['ip_address']}",
             border_style="blue"
