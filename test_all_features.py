@@ -51,6 +51,7 @@ def test_feature(name, command, expected_keywords=None):
             else:
                 missing = set(expected_keywords) - set(found_keywords)
                 console.print(f"[yellow]⚠ {name} - PARTIAL (missing: {missing})[/yellow]")
+                console.print(f"[dim]--- Output ---\n{stdout}[/dim]")
                 return False
         else:
             console.print(f"[green]✓ {name} - PASSED[/green]")
